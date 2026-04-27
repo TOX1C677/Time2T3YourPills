@@ -6,7 +6,7 @@
 
 | Путь | Назначение |
 |------|------------|
-| `lib/` | Flutter-приложение (Provider + `AppServices`, go_router, GetStorage, мок-синк). |
+| `lib/` | Flutter-приложение (Provider + `AppServices`, go_router, GetStorage, синк с API через `ApiRemoteDataSource`). |
 | `api/` | REST API (FastAPI, JWT, SQLite по умолчанию / Postgres в `db/`). |
 | `db/` | Docker Compose для PostgreSQL, заметки по миграциям. |
 | `.github/workflows/ci.yml` | CI: pytest для `api/`, `flutter analyze` + тесты. |

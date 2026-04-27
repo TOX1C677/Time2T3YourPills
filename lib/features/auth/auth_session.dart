@@ -26,6 +26,28 @@ class AuthSession extends ChangeNotifier {
         },
       ),
     );
+    _dio.interceptors.add(
+      QueuedInterceptorsWrapper(
+        onError: (err, handler) async {
+          if (err.response?.statusCode != 401) {
+            return handler.next(err);
+          }
+          final path = err.requestOptions.path;
+          if (path.contains('/v1/auth/login') ||
+              path.contains('/v1/auth/register') ||
+              path.contains('/v1/auth/refresh')) {
+            return handler.next(err);
+          }
+          try {
+            await refreshTokens();
+            final clone = await _dio.fetch(err.requestOptions);
+            return handler.resolve(clone);
+          } catch (_) {
+            return handler.next(err);
+          }
+        },
+      ),
+    );
   }
 
   static const _kAccess = 'auth.access_token';
@@ -111,6 +133,29 @@ class AuthSession extends ChangeNotifier {
         'display_name': displayName.trim(),
         'role': role,
       },
+    );
+    _applyTokenResponse(res.data!);
+    await _persistTokens();
+    notifyListeners();
+  }
+
+  /// Обновление пары токенов без рекурсии через основной [Dio].
+  Future<void> refreshTokens() async {
+    final rt = _refreshToken ?? await _storage.read(key: _kRefresh);
+    if (rt == null || rt.isEmpty) {
+      throw StateError('No refresh token');
+    }
+    final plain = Dio(
+      BaseOptions(
+        baseUrl: _dio.options.baseUrl,
+        connectTimeout: _dio.options.connectTimeout,
+        receiveTimeout: _dio.options.receiveTimeout,
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
+    final res = await plain.post<Map<String, dynamic>>(
+      '/v1/auth/refresh',
+      data: {'refresh_token': rt},
     );
     _applyTokenResponse(res.data!);
     await _persistTokens();

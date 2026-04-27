@@ -4,7 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../app/config/app_env.dart';
+import '../../app/services/app_services.dart';
 import '../../app/theme/app_sizes.dart';
+import '../caregiver/caregiver_scope.dart';
+import '../medications/medications_controller.dart';
+import '../profile/patient_controller.dart';
 import 'auth_session.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -32,12 +36,27 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = null;
       _loading = true;
     });
+    final caregiver = context.read<CaregiverScope>();
+    final app = context.read<AppServices>();
+    final meds = context.read<MedicationsController>();
+    final pat = context.read<PatientController>();
     try {
       await context.read<AuthSession>().login(
             email: _email.text.trim(),
             password: _password.text,
           );
-      if (mounted) context.go('/timer');
+      if (!mounted) return;
+      await caregiver.refreshFromApi();
+      if (!mounted) return;
+      try {
+        await app.syncRemoteNow();
+      } catch (_) {}
+      if (!mounted) return;
+      await meds.load();
+      if (!mounted) return;
+      await pat.load();
+      if (!mounted) return;
+      context.go('/timer');
     } on DioException catch (e) {
       final msg = e.response?.data;
       setState(() {

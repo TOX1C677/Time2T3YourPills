@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -7,10 +8,22 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import require_caregiver
-from app.models import CaregiverPatientLink, PatientProfile, User, UserRole
-from app.schemas import CaregiverPatientOut, LinkPatientRequest
+from app.models import CaregiverPatientLink, Medication as MedRow
+from app.models import PatientProfile, User, UserRole
+from app.schemas import CaregiverPatientOut, LinkPatientRequest, MedicationOut, MedicationUpsert
 
 router = APIRouter(prefix="/caregiver", tags=["caregiver"])
+
+
+def _assert_caregiver_linked(db: Session, caregiver_id: UUID, patient_user_id: UUID) -> None:
+    ok = db.scalar(
+        select(CaregiverPatientLink.id).where(
+            CaregiverPatientLink.caregiver_user_id == caregiver_id,
+            CaregiverPatientLink.patient_user_id == patient_user_id,
+        )
+    )
+    if ok is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Patient not linked to this caregiver")
 
 
 @router.post("/link-patient")
@@ -74,3 +87,76 @@ def list_patients(
             )
         )
     return out
+
+
+@router.get("/patients/{patient_user_id}/medications", response_model=list[MedicationOut])
+def list_patient_medications(
+    patient_user_id: UUID,
+    caregiver: Annotated[User, Depends(require_caregiver)],
+    db: Session = Depends(get_db),
+) -> list[MedRow]:
+    _assert_caregiver_linked(db, caregiver.id, patient_user_id)
+    rows = db.scalars(
+        select(MedRow)
+        .where(MedRow.patient_user_id == patient_user_id, MedRow.deleted_at.is_(None))
+        .order_by(MedRow.created_at)
+    ).all()
+    return list(rows)
+
+
+@router.put("/patients/{patient_user_id}/medications/{medication_id}", response_model=MedicationOut)
+def upsert_patient_medication(
+    patient_user_id: UUID,
+    medication_id: UUID,
+    body: MedicationUpsert,
+    caregiver: Annotated[User, Depends(require_caregiver)],
+    db: Session = Depends(get_db),
+) -> MedRow:
+    _assert_caregiver_linked(db, caregiver.id, patient_user_id)
+    row = db.get(MedRow, medication_id)
+    if row is None:
+        row = MedRow(
+            id=medication_id,
+            patient_user_id=patient_user_id,
+            name=body.name,
+            dosage=body.dosage,
+            reminder_mode=body.reminder_mode,
+            interval_minutes=body.interval_minutes,
+            slot_times=body.slot_times,
+            deleted_at=None,
+        )
+        db.add(row)
+    else:
+        if row.patient_user_id != patient_user_id:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Medication belongs to another patient")
+        row.name = body.name
+        row.dosage = body.dosage
+        row.reminder_mode = body.reminder_mode
+        row.interval_minutes = body.interval_minutes
+        row.slot_times = body.slot_times
+        row.deleted_at = None
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+@router.delete(
+    "/patients/{patient_user_id}/medications/{medication_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_patient_medication(
+    patient_user_id: UUID,
+    medication_id: UUID,
+    caregiver: Annotated[User, Depends(require_caregiver)],
+    db: Session = Depends(get_db),
+) -> None:
+    _assert_caregiver_linked(db, caregiver.id, patient_user_id)
+    row = db.get(MedRow, medication_id)
+    if row is None or row.patient_user_id != patient_user_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Medication not found")
+    if row.deleted_at is not None:
+        return None
+    row.deleted_at = datetime.now(UTC)
+    db.add(row)
+    db.commit()
+    return None

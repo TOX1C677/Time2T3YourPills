@@ -18,6 +18,9 @@ class PatientController extends ChangeNotifier {
 
   Future<void> save(PatientProfile next) async {
     await _services.patient.upsertLocalEnqueue(next);
+    try {
+      await _services.syncRemoteNow();
+    } catch (_) {}
     await load();
   }
 }

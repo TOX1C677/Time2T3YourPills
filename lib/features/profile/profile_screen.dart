@@ -4,8 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../app/services/app_services.dart';
 import '../../app/theme/app_sizes.dart';
 import '../auth/auth_session.dart';
+import '../caregiver/caregiver_scope.dart';
+import '../medications/medications_controller.dart';
 import '../../core/models/patient_profile.dart';
 import 'patient_controller.dart';
 import 'ui_preferences_controller.dart';
@@ -58,7 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           PatientProfile(name: name, middleName: middle),
         );
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Сохранено локально')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Сохранено')));
     }
   }
 
@@ -111,12 +114,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
           FilledButton(
             onPressed: () async {
+              final auth = context.read<AuthSession>();
+              final cg = context.read<CaregiverScope>();
+              final app = context.read<AppServices>();
+              final meds = context.read<MedicationsController>();
+              final messenger = ScaffoldMessenger.of(context);
               try {
-                await context.read<AuthSession>().linkPatientByToken(tokenCtrl.text);
+                await auth.linkPatientByToken(tokenCtrl.text);
                 if (ctx.mounted) Navigator.pop(ctx);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Пациент привязан')));
-                }
+                if (!mounted) return;
+                await cg.refreshFromApi();
+                if (!mounted) return;
+                try {
+                  await app.syncRemoteNow();
+                } catch (_) {}
+                if (!mounted) return;
+                await meds.load();
+                messenger.showSnackBar(const SnackBar(content: Text('Пациент привязан')));
               } on DioException catch (e) {
                 final d = e.response?.data;
                 final msg = d is Map ? '${d['detail'] ?? e.message}' : '${e.message}';
@@ -150,10 +164,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: const Icon(Icons.more_vert),
             tooltip: 'Ещё',
             onSelected: (value) async {
-              if (value == 'about') context.push('/about');
+              if (value == 'about') {
+                if (!mounted) return;
+                context.push('/about');
+              }
               if (value == 'logout') {
-                await context.read<AuthSession>().logout();
-                if (context.mounted) context.go('/login');
+                final router = GoRouter.of(context);
+                final auth = context.read<AuthSession>();
+                final cg = context.read<CaregiverScope>();
+                await auth.logout();
+                cg.clear();
+                if (!mounted) return;
+                router.go('/login');
               }
             },
             itemBuilder: (context) => const [

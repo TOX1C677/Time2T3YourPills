@@ -12,7 +12,8 @@ import 'app/services/notification_service.dart';
 import 'app/services/timezone_setup.dart';
 import 'app/storage/get_storage_key_value_store.dart';
 import 'app/time2t3_app.dart';
-import 'data/sources/remote/mock_remote_data_source.dart';
+import 'data/sources/remote/api_remote_data_source.dart';
+import 'features/caregiver/caregiver_scope.dart';
 import 'features/connectivity/connectivity_notifier.dart';
 import 'features/medications/medications_controller.dart';
 import 'features/profile/patient_controller.dart';
@@ -31,13 +32,28 @@ Future<void> main() async {
     await notifications.ensureAndroidSchedulePermissions();
   }
 
-  final remote = MockRemoteDataSource();
+  final auth = AuthSession();
+  await auth.restore();
+
+  final caregiverScope = CaregiverScope(auth);
+  final remote = ApiRemoteDataSource(
+    auth,
+    activeCaregiverPatientId: () => caregiverScope.selectedPatientUserId,
+  );
   final appServices = AppServices(
     store: store,
     notifications: notifications,
     remote: remote,
+    canApplyOutbox: () => auth.isAuthenticated,
   );
   await appServices.init();
+
+  if (auth.isAuthenticated) {
+    await caregiverScope.refreshFromApi();
+    try {
+      await appServices.syncRemoteNow();
+    } catch (_) {}
+  }
 
   final intakeTimer = IntakeTimerController(appServices);
   notifications.onConfirmFromNotification = () {
@@ -48,14 +64,13 @@ Future<void> main() async {
   };
   await intakeTimer.restore();
 
-  final auth = AuthSession();
-  await auth.restore();
   final router = createAppRouter(auth);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: auth),
+        ChangeNotifierProvider.value(value: caregiverScope),
         Provider<AppServices>.value(value: appServices),
         ChangeNotifierProvider(
           create: (_) {

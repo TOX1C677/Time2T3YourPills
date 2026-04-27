@@ -58,3 +58,27 @@ class CaregiverPatientOut(BaseModel):
     display_name: str
     first_name: str
     middle_name: str
+
+
+class MedicationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    patient_user_id: UUID
+    name: str
+    dosage: str
+    reminder_mode: str
+    interval_minutes: int | None = None
+    slot_times: list[str] | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class MedicationUpsert(BaseModel):
+    """Тело PUT: создание или полная замена полей (клиент задаёт id в path)."""
+
+    name: str = Field(..., max_length=500)
+    dosage: str = Field(default="", max_length=200)
+    reminder_mode: str = Field(pattern="^(interval|schedule)$")
+    interval_minutes: int | None = None
+    slot_times: list[str] | None = None

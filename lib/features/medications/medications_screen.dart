@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../../app/theme/app_sizes.dart';
 import '../../core/models/reminder_mode.dart';
+import '../auth/auth_session.dart';
+import '../caregiver/caregiver_scope.dart';
 import 'medications_controller.dart';
 
 class MedicationsScreen extends StatelessWidget {
@@ -12,14 +14,60 @@ class MedicationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final meds = context.watch<MedicationsController>();
+    final auth = context.watch<AuthSession>();
+    final cg = context.watch<CaregiverScope>();
     final theme = Theme.of(context);
     final bottomFabPad = 128.0 + MediaQuery.viewPaddingOf(context).bottom;
+
+    final caregiverNoPatients =
+        auth.isAuthenticated && auth.role == 'caregiver' && cg.patients.isEmpty;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Таблетки'),
+        actions: [
+          if (auth.isAuthenticated && auth.role == 'caregiver' && cg.patients.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 8, right: 12),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 220),
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    value: cg.selectedPatientUserId != null &&
+                            cg.patients.any((p) => p.patientUserId == cg.selectedPatientUserId)
+                        ? cg.selectedPatientUserId
+                        : cg.patients.first.patientUserId,
+                    items: [
+                      for (final p in cg.patients)
+                        DropdownMenuItem<String>(
+                          value: p.patientUserId,
+                          child: Text(p.label, overflow: TextOverflow.ellipsis),
+                        ),
+                    ],
+                    onChanged: (id) async {
+                      if (id == null) return;
+                      context.read<CaregiverScope>().selectPatient(id);
+                      await context.read<MedicationsController>().refreshFromServer();
+                    },
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
-      body: meds.items.isEmpty
+      body: caregiverNoPatients
+          ? Center(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(AppSizes.spaceM, AppSizes.spaceM, AppSizes.spaceM, bottomFabPad),
+                child: Text(
+                  'Нет привязанных пациентов. В профиле нажмите «Добавить пациента по коду».',
+                  style: theme.textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
+          : meds.items.isEmpty
           ? Center(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(AppSizes.spaceM, AppSizes.spaceM, AppSizes.spaceM, bottomFabPad),
@@ -100,7 +148,9 @@ class MedicationsScreen extends StatelessWidget {
               ),
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Padding(
+      floatingActionButton: caregiverNoPatients
+          ? null
+          : Padding(
         padding: EdgeInsets.fromLTRB(
           AppSizes.spaceM,
           0,
@@ -112,6 +162,14 @@ class MedicationsScreen extends StatelessWidget {
           height: 96,
           child: FilledButton(
             onPressed: () async {
+              if (auth.isAuthenticated &&
+                  auth.role == 'caregiver' &&
+                  cg.selectedPatientUserId == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Сначала выберите пациента в списке сверху')),
+                );
+                return;
+              }
               await context.push('/medications/add');
               if (!context.mounted) return;
               await context.read<MedicationsController>().load();

@@ -22,6 +22,18 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 Развёрнутый инстанс (пример): **`https://api.anti-toxic.ru/docs`**, health — **`GET /health`**, бизнес-маршруты под **`/v1/...`**.
 
+### Лекарства (пациент)
+
+- `GET /v1/patients/me/medications` — список (без soft-deleted).
+- `PUT /v1/patients/me/medications/{medication_id}` — upsert (тело: `name`, `dosage`, `reminder_mode` = `interval` | `schedule`, `interval_minutes`, `slot_times`).
+- `DELETE /v1/patients/me/medications/{medication_id}` — soft delete.
+
+### Лекарства (опекун, только привязанные пациенты)
+
+- `GET /v1/caregiver/patients/{patient_user_id}/medications`
+- `PUT /v1/caregiver/patients/{patient_user_id}/medications/{medication_id}`
+- `DELETE /v1/caregiver/patients/{patient_user_id}/medications/{medication_id}`
+
 ## Переменные окружения
 
 | Переменная | Описание | По умолчанию |

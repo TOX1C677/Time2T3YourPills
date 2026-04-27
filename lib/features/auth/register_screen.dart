@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../app/services/app_services.dart';
 import '../../app/theme/app_sizes.dart';
+import '../caregiver/caregiver_scope.dart';
+import '../medications/medications_controller.dart';
+import '../profile/patient_controller.dart';
 import 'auth_session.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -34,6 +38,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _error = null;
       _loading = true;
     });
+    final caregiver = context.read<CaregiverScope>();
+    final app = context.read<AppServices>();
+    final meds = context.read<MedicationsController>();
+    final pat = context.read<PatientController>();
     try {
       await context.read<AuthSession>().register(
             email: _email.text.trim(),
@@ -41,7 +49,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
             displayName: _name.text.trim(),
             role: _role,
           );
-      if (mounted) context.go('/timer');
+      if (!mounted) return;
+      await caregiver.refreshFromApi();
+      if (!mounted) return;
+      try {
+        await app.syncRemoteNow();
+      } catch (_) {}
+      if (!mounted) return;
+      await meds.load();
+      if (!mounted) return;
+      await pat.load();
+      if (!mounted) return;
+      context.go('/timer');
     } on DioException catch (e) {
       final msg = e.response?.data;
       setState(() {

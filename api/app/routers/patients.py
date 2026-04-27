@@ -1,13 +1,16 @@
+from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import require_patient
+from app.models import Medication as MedRow
 from app.models import PatientProfile, User
-from app.schemas import InviteCodeOut, PatientProfileOut, PatientProfileUpdate
+from app.schemas import InviteCodeOut, MedicationOut, MedicationUpsert, PatientProfileOut, PatientProfileUpdate
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
@@ -53,3 +56,67 @@ def patch_my_profile(
     db.commit()
     db.refresh(profile)
     return profile
+
+
+@router.get("/me/medications", response_model=list[MedicationOut])
+def list_my_medications(
+    user: Annotated[User, Depends(require_patient)],
+    db: Session = Depends(get_db),
+) -> list[MedRow]:
+    rows = db.scalars(
+        select(MedRow)
+        .where(MedRow.patient_user_id == user.id, MedRow.deleted_at.is_(None))
+        .order_by(MedRow.created_at)
+    ).all()
+    return list(rows)
+
+
+@router.put("/me/medications/{medication_id}", response_model=MedicationOut)
+def upsert_my_medication(
+    medication_id: UUID,
+    body: MedicationUpsert,
+    user: Annotated[User, Depends(require_patient)],
+    db: Session = Depends(get_db),
+) -> MedRow:
+    row = db.get(MedRow, medication_id)
+    if row is None:
+        row = MedRow(
+            id=medication_id,
+            patient_user_id=user.id,
+            name=body.name,
+            dosage=body.dosage,
+            reminder_mode=body.reminder_mode,
+            interval_minutes=body.interval_minutes,
+            slot_times=body.slot_times,
+            deleted_at=None,
+        )
+        db.add(row)
+    else:
+        if row.patient_user_id != user.id:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your medication")
+        row.name = body.name
+        row.dosage = body.dosage
+        row.reminder_mode = body.reminder_mode
+        row.interval_minutes = body.interval_minutes
+        row.slot_times = body.slot_times
+        row.deleted_at = None
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+@router.delete("/me/medications/{medication_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_my_medication(
+    medication_id: UUID,
+    user: Annotated[User, Depends(require_patient)],
+    db: Session = Depends(get_db),
+) -> None:
+    row = db.get(MedRow, medication_id)
+    if row is None or row.patient_user_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Medication not found")
+    if row.deleted_at is not None:
+        return None
+    row.deleted_at = datetime.now(UTC)
+    db.add(row)
+    db.commit()
+    return None
