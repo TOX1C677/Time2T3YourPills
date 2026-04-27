@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Time2T3YourPills</string>
+    <string name="app_version">Version: %1$s</string>
+    <string name="contact_info">Contact us at: %1$s</string>
+    <string name="confirm">Confirm</string>
+    <string name="snooze">Remind me later</string>
+</resources>

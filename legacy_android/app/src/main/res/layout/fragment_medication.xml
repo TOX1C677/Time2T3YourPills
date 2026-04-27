@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/medication_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Medication Name" />
+
+    <EditText
+        android:id="@+id/dosage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Dosage"
+        android:inputType="number"
+        android:layout_marginTop="10dp" />
+
+    <EditText
+        android:id="@+id/timer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Timer (in minutes)"
+        android:inputType="number"
+        android:layout_marginTop="10dp" />
+    <EditText
+        android:id="@+id/repeat_count"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Loop counter"
+        android:inputType="number"/>
+
+
+    <Button
+        android:id="@+id/add_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add Medication"
+        android:layout_marginTop="10dp" />
+
+    <!-- Замените ListView на RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/medications_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+</LinearLayout>
