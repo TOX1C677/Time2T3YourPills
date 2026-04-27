@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../app/theme/app_sizes.dart';
+import '../../core/errors/user_error_ru.dart';
 import '../../core/models/missed_intake_alert.dart';
 import '../auth/auth_session.dart';
 import 'caregiver_scope.dart';
@@ -54,18 +55,16 @@ class _CaregiverAlertsScreenState extends State<CaregiverAlertsScreen> {
         await context.read<CaregiverScope>().refreshMissedAlertsCount();
       }
     } on DioException catch (e) {
-      final d = e.response?.data;
-      final msg = d is Map ? '${d['detail'] ?? e.message}' : '${e.message}';
       if (mounted) {
         setState(() {
-          _error = msg;
+          _error = dioErrorRu(e);
           _loading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = '$e';
+          _error = userErrorRu(e);
           _loading = false;
         });
       }

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../app/services/app_services.dart';
 import '../../app/theme/app_sizes.dart';
+import '../../core/errors/user_error_ru.dart';
 import '../caregiver/caregiver_scope.dart';
 import '../medications/medications_controller.dart';
 import '../profile/patient_controller.dart';
@@ -59,12 +60,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       context.go('/timer');
     } on DioException catch (e) {
-      final msg = e.response?.data;
-      setState(() {
-        _error = msg is Map && msg['detail'] != null ? '${msg['detail']}' : 'Ошибка входа';
-      });
+      setState(() => _error = dioErrorRu(e));
     } catch (e) {
-      setState(() => _error = '$e');
+      setState(() => _error = userErrorRu(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

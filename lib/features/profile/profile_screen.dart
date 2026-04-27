@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../app/services/app_services.dart';
 import '../../app/theme/app_sizes.dart';
+import '../../core/errors/user_error_ru.dart';
 import '../auth/auth_session.dart';
 import '../caregiver/caregiver_scope.dart';
 import '../medications/medications_controller.dart';
@@ -89,9 +90,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     } on DioException catch (e) {
       if (!mounted) return;
-      final d = e.response?.data;
-      final msg = d is Map ? '${d['detail'] ?? e.message}' : '${e.message}';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(dioErrorRu(e))));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userErrorRu(e))));
     }
   }
 
@@ -248,10 +250,12 @@ class _LinkPatientByCodeDialogState extends State<_LinkPatientByCodeDialog> {
               await meds.load();
               messenger.showSnackBar(const SnackBar(content: Text('Пациент привязан')));
             } on DioException catch (e) {
-              final d = e.response?.data;
-              final msg = d is Map ? '${d['detail'] ?? e.message}' : '${e.message}';
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(dioErrorRu(e))));
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userErrorRu(e))));
               }
             }
           },
