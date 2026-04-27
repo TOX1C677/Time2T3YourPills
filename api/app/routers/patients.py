@@ -21,7 +21,11 @@ from app.schemas import (
     MedicationUpsert,
     PatientProfileOut,
     PatientProfileUpdate,
+    ReminderEscalationRequest,
+    ReminderEscalationResponse,
 )
+from app.services.caregiver_email import send_missed_alert_emails
+from app.services.missed_intake_scan import create_missed_alerts_from_reminder_escalation
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
@@ -138,6 +142,19 @@ def delete_my_medication(
     db.add(row)
     db.commit()
     return None
+
+
+@router.post("/me/reminder-escalation", response_model=ReminderEscalationResponse)
+def post_reminder_escalation(
+    body: ReminderEscalationRequest,
+    user: Annotated[User, Depends(require_patient)],
+    db: Session = Depends(get_db),
+) -> ReminderEscalationResponse:
+    """После двух 15-минутных напоминаний без реакции: алерт для опекунов (+ письмо, если настроен SMTP)."""
+    pairs = [(it.medication_id, it.due_at) for it in body.items]
+    new_ids = create_missed_alerts_from_reminder_escalation(db, user.id, pairs)
+    emailed = send_missed_alert_emails(db, new_ids)
+    return ReminderEscalationResponse(new_alerts=len(new_ids), emails_sent=emailed)
 
 
 @router.post("/me/intake-events", response_model=IntakeEventOut, status_code=status.HTTP_201_CREATED)

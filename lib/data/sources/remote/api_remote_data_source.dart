@@ -109,6 +109,19 @@ class ApiRemoteDataSource implements RemoteSyncDataSource {
     await _auth.dio.post<Map<String, dynamic>>('/v1/patients/me/intake-events', data: body);
   }
 
+  /// Фиксация пропуска для опекунов после игнорирования двух 15-минутных напоминаний.
+  Future<void> postReminderEscalation(List<Map<String, String>> items) async {
+    if (!_auth.isAuthenticated || _auth.role != 'patient') return;
+    await _auth.dio.post<void>(
+      '/v1/patients/me/reminder-escalation',
+      data: {
+        'items': items
+            .map((e) => {'medication_id': e['medication_id'], 'due_at': e['due_at']})
+            .toList(),
+      },
+    );
+  }
+
   Future<void> _patchPatientProfile(Map<String, Object?> map) async {
     await _auth.dio.patch<Map<String, dynamic>>(
       '/v1/patients/me/profile',

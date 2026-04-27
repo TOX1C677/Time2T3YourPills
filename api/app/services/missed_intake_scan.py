@@ -219,3 +219,24 @@ def run_missed_intake_scan(
         db.flush()
     db.commit()
     return created
+
+
+def create_missed_alerts_from_reminder_escalation(
+    db: Session,
+    patient_user_id: UUID,
+    items: list[tuple[UUID, datetime]],
+) -> list[UUID]:
+    """Создаёт записи missed_intake_alerts по запросу приложения пациента (игнор 2×15 мин). Commit внутри."""
+    now = datetime.now(UTC)
+    new_rows: list[MissedIntakeAlert] = []
+    for med_id, due_at in items:
+        med = db.get(MedRow, med_id)
+        if med is None or med.patient_user_id != patient_user_id:
+            continue
+        bucket: list[MissedIntakeAlert] = []
+        _try_add_missed(db, patient_user_id, med_id, due_at, now, bucket)
+        new_rows.extend(bucket)
+    if new_rows:
+        db.flush()
+    db.commit()
+    return [a.id for a in new_rows]

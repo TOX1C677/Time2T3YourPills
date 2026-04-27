@@ -89,4 +89,13 @@ class AppServices {
       }
     }
   }
+
+  /// Алерты опекунам после 30 мин без реакции на напоминания (только пациент, только REST).
+  Future<void> notifyReminderEscalationToCaregivers(List<Map<String, String>> items) async {
+    final remote = this.remote;
+    if (remote is! ApiRemoteDataSource || items.isEmpty) return;
+    try {
+      await remote.postReminderEscalation(items);
+    } catch (_) {}
+  }
 }

@@ -117,6 +117,22 @@ class IntakeEventOut(BaseModel):
     snooze_until: datetime | None = None
 
 
+class ReminderEscalationItem(BaseModel):
+    """Один просроченный приём для фиксации алерта опекунам (после игнорирования напоминаний на телефоне)."""
+
+    medication_id: UUID
+    due_at: datetime
+
+
+class ReminderEscalationRequest(BaseModel):
+    items: list[ReminderEscalationItem] = Field(..., min_length=1, max_length=32)
+
+
+class ReminderEscalationResponse(BaseModel):
+    new_alerts: int
+    emails_sent: int
+
+
 class MedicationUpsert(BaseModel):
     """Тело PUT: создание или полная замена полей (клиент задаёт id в path)."""
 

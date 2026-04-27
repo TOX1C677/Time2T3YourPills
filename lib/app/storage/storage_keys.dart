@@ -9,6 +9,9 @@ abstract final class StorageKeys {
 
   /// Состояние мульти-таймера: nextDue по id + последняя запланированная группа для уведомления.
   static const String intakeTimerStateJson = 'timer.intake_state.v2';
+
+  /// Якорь цепочки напоминаний (0 / +15 мин пациент / +30 мин опекуны через API).
+  static const String intakeReminderEscalationJson = 'timer.reminder_escalation.v1';
   @Deprecated('Используйте intakeTimerStateJson')
   static const String timerSessionJson = 'timer.active_session.v1';
 }
