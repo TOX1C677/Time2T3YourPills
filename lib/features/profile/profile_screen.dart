@@ -1,8 +1,11 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../app/theme/app_sizes.dart';
+import '../auth/auth_session.dart';
 import '../../core/models/patient_profile.dart';
 import 'patient_controller.dart';
 import 'ui_preferences_controller.dart';
@@ -59,24 +62,103 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _showInviteCodeDialog() async {
+    try {
+      final code = await context.read<AuthSession>().fetchInviteCode();
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Код для врача или родственника'),
+          content: SelectableText(code, style: Theme.of(ctx).textTheme.bodyLarge),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Закрыть')),
+            FilledButton(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: code));
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Код скопирован')));
+              },
+              child: const Text('Копировать'),
+            ),
+          ],
+        ),
+      );
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final d = e.response?.data;
+      final msg = d is Map ? '${d['detail'] ?? e.message}' : '${e.message}';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
+  }
+
+  Future<void> _showLinkPatientDialog() async {
+    final tokenCtrl = TextEditingController();
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+        title: const Text('Добавить пациента'),
+        content: TextField(
+          controller: tokenCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Код от пациента',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+          FilledButton(
+            onPressed: () async {
+              try {
+                await context.read<AuthSession>().linkPatientByToken(tokenCtrl.text);
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Пациент привязан')));
+                }
+              } on DioException catch (e) {
+                final d = e.response?.data;
+                final msg = d is Map ? '${d['detail'] ?? e.message}' : '${e.message}';
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(msg)));
+                }
+              }
+            },
+            child: const Text('Привязать'),
+          ),
+        ],
+      ),
+    );
+    } finally {
+      tokenCtrl.dispose();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     context.watch<PatientController>();
     final uiPrefs = context.watch<UiPreferencesController>();
+    final auth = context.watch<AuthSession>();
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Профиль пациента'),
+        title: Text(auth.role == 'caregiver' ? 'Профиль опекуна' : 'Профиль пациента'),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             tooltip: 'Ещё',
-            onSelected: (value) {
+            onSelected: (value) async {
               if (value == 'about') context.push('/about');
+              if (value == 'logout') {
+                await context.read<AuthSession>().logout();
+                if (context.mounted) context.go('/login');
+              }
             },
             itemBuilder: (context) => const [
               PopupMenuItem(value: 'about', child: Text('О приложении')),
+              PopupMenuItem(value: 'logout', child: Text('Выйти')),
             ],
           ),
         ],
@@ -84,6 +166,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppSizes.spaceM),
         children: [
+          if (auth.isAuthenticated && auth.role == 'patient') ...[
+            FilledButton.tonalIcon(
+              onPressed: _showInviteCodeDialog,
+              icon: const Icon(Icons.link),
+              label: const Text('Добавить лечащего врача или родственника'),
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+          ],
+          if (auth.isAuthenticated && auth.role == 'caregiver') ...[
+            FilledButton.tonalIcon(
+              onPressed: _showLinkPatientDialog,
+              icon: const Icon(Icons.person_add_alt_1),
+              label: const Text('Добавить пациента по коду'),
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+          ],
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text('Сделать весь шрифт жирным', style: theme.textTheme.titleSmall),

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'app/router/app_router.dart';
 import 'app/services/app_services.dart';
+import 'features/auth/auth_session.dart';
 import 'app/services/notification_service.dart';
 import 'app/services/timezone_setup.dart';
 import 'app/storage/get_storage_key_value_store.dart';
@@ -47,11 +48,14 @@ Future<void> main() async {
   };
   await intakeTimer.restore();
 
-  final router = createAppRouter();
+  final auth = AuthSession();
+  await auth.restore();
+  final router = createAppRouter(auth);
 
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: auth),
         Provider<AppServices>.value(value: appServices),
         ChangeNotifierProvider(
           create: (_) {

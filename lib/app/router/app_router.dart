@@ -1,16 +1,44 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../features/about/about_screen.dart';
+import '../../features/auth/auth_session.dart';
+import '../../features/auth/login_screen.dart';
+import '../../features/auth/register_screen.dart';
 import '../../features/medications/add_medication_screen.dart';
 import '../../features/medications/medications_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/shell/app_shell.dart';
 import '../../features/timer/timer_screen.dart';
 
-GoRouter createAppRouter() {
+GoRouter createAppRouter(AuthSession auth) {
   return GoRouter(
-    initialLocation: '/timer',
+    initialLocation: auth.isAuthenticated ? '/timer' : '/login',
+    refreshListenable: auth,
+    redirect: (BuildContext context, GoRouterState state) {
+      final loc = state.matchedLocation;
+      final public = loc == '/login' || loc == '/register';
+      final authed = Provider.of<AuthSession>(context, listen: false).isAuthenticated;
+      if (!authed && !public) {
+        return '/login';
+      }
+      if (authed && public) {
+        return '/timer';
+      }
+      return null;
+    },
     routes: [
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/register',
+        name: 'register',
+        builder: (context, state) => const RegisterScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return AppShell(navigationShell: navigationShell);

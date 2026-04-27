@@ -3,14 +3,14 @@ import 'dart:convert';
 import '../../app/storage/key_value_store.dart';
 import '../../app/storage/storage_keys.dart';
 import '../../core/models/medication.dart';
-import '../sources/remote/mock_remote_data_source.dart';
+import '../sources/remote/remote_sync_data_source.dart';
 import 'outbox_repository.dart';
 
 class MedicationsRepository {
   MedicationsRepository(this._store, this._remote, this._outbox);
 
   final KeyValueStore _store;
-  final MockRemoteDataSource _remote;
+  final RemoteSyncDataSource _remote;
   final OutboxRepository _outbox;
 
   Future<List<Medication>> loadLocal() async {

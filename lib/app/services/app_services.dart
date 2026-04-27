@@ -1,7 +1,7 @@
 import '../../data/repositories/medications_repository.dart';
 import '../../data/repositories/outbox_repository.dart';
 import '../../data/repositories/patient_repository.dart';
-import '../../data/sources/remote/mock_remote_data_source.dart';
+import '../../data/sources/remote/remote_sync_data_source.dart';
 import '../storage/key_value_store.dart';
 import 'notification_service.dart';
 
@@ -19,7 +19,7 @@ class AppServices {
 
   final KeyValueStore store;
   final NotificationService notifications;
-  final MockRemoteDataSource remote;
+  final RemoteSyncDataSource remote;
 
   late final OutboxRepository outbox;
   late final MedicationsRepository medications;
