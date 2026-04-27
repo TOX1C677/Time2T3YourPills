@@ -168,6 +168,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (!mounted) return;
                 context.push('/intake-history');
               }
+              if (value == 'alerts') {
+                if (!mounted) return;
+                context.push('/caregiver-alerts');
+              }
               if (value == 'about') {
                 if (!mounted) return;
                 context.push('/about');
@@ -182,10 +186,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 router.go('/login');
               }
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'history', child: Text('История приёмов')),
-              PopupMenuItem(value: 'about', child: Text('О приложении')),
-              PopupMenuItem(value: 'logout', child: Text('Выйти')),
+            itemBuilder: (context) => [
+              if (auth.role == 'caregiver')
+                const PopupMenuItem(value: 'alerts', child: Text('Пропуски приёмов')),
+              const PopupMenuItem(value: 'history', child: Text('История приёмов')),
+              const PopupMenuItem(value: 'about', child: Text('О приложении')),
+              const PopupMenuItem(value: 'logout', child: Text('Выйти')),
             ],
           ),
         ],

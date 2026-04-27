@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.database import Base, engine
-from app.routers import auth, caregiver, health, patients
+from app.routers import auth, caregiver, health, patients, system
 
 
 @asynccontextmanager
@@ -22,3 +22,4 @@ app.include_router(health.router)
 app.include_router(auth.router, prefix="/v1")
 app.include_router(patients.router, prefix="/v1")
 app.include_router(caregiver.router, prefix="/v1")
+app.include_router(system.router, prefix="/v1")

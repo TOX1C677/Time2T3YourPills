@@ -6,12 +6,21 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.deps import require_caregiver
 from app.models import CaregiverPatientLink, IntakeEvent
 from app.models import Medication as MedRow
-from app.models import PatientProfile, User, UserRole
-from app.schemas import CaregiverPatientOut, IntakeEventOut, LinkPatientRequest, MedicationOut, MedicationUpsert
+from app.models import MissedIntakeAlert, PatientProfile, User, UserRole
+from app.rate_limit import enforce_hourly_limit
+from app.schemas import (
+    CaregiverPatientOut,
+    IntakeEventOut,
+    LinkPatientRequest,
+    MedicationOut,
+    MedicationUpsert,
+    MissedIntakeAlertOut,
+)
 
 router = APIRouter(prefix="/caregiver", tags=["caregiver"])
 
@@ -33,6 +42,11 @@ def link_patient(
     caregiver: Annotated[User, Depends(require_caregiver)],
     db: Session = Depends(get_db),
 ) -> dict[str, str]:
+    enforce_hourly_limit(
+        f"caregiver_link:{caregiver.id}",
+        settings.caregiver_link_attempts_per_hour,
+        "Слишком много попыток привязки пациента, подождите час",
+    )
     token = body.token.strip()
     profile = db.scalar(select(PatientProfile).where(PatientProfile.link_token == token))
     if profile is None:
@@ -85,6 +99,43 @@ def list_patients(
                 display_name=user.display_name,
                 first_name=profile.first_name,
                 middle_name=profile.middle_name,
+            )
+        )
+    return out
+
+
+@router.get("/alerts", response_model=list[MissedIntakeAlertOut])
+def list_missed_intake_alerts(
+    caregiver: Annotated[User, Depends(require_caregiver)],
+    db: Session = Depends(get_db),
+) -> list[MissedIntakeAlertOut]:
+    rows = db.execute(
+        select(MissedIntakeAlert, User, MedRow, PatientProfile)
+        .join(User, User.id == MissedIntakeAlert.patient_user_id)
+        .outerjoin(PatientProfile, PatientProfile.user_id == User.id)
+        .join(MedRow, MedRow.id == MissedIntakeAlert.medication_id)
+        .join(
+            CaregiverPatientLink,
+            (CaregiverPatientLink.patient_user_id == MissedIntakeAlert.patient_user_id)
+            & (CaregiverPatientLink.caregiver_user_id == caregiver.id),
+        )
+        .order_by(MissedIntakeAlert.detected_at.desc())
+    ).all()
+    out: list[MissedIntakeAlertOut] = []
+    for alert, patient_user, med, prof in rows:
+        name = (patient_user.display_name or "").strip()
+        if not name and prof is not None:
+            parts = [prof.first_name, prof.middle_name]
+            name = " ".join(p for p in parts if p).strip()
+        out.append(
+            MissedIntakeAlertOut(
+                id=alert.id,
+                patient_user_id=alert.patient_user_id,
+                patient_display_name=name or str(alert.patient_user_id),
+                medication_id=alert.medication_id,
+                medication_name=med.name,
+                due_at=alert.due_at,
+                detected_at=alert.detected_at,
             )
         )
     return out

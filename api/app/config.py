@@ -9,6 +9,11 @@ class Settings(BaseSettings):
     jwt_access_minutes: int = 30
     jwt_refresh_days: int = 7
     jwt_algorithm: str = "HS256"
+    # Worker/cron: POST /v1/system/missed-intake-scan с заголовком X-Worker-Key
+    worker_api_key: str = ""
+    missed_intake_grace_minutes: int = 45
+    # Rate limit привязки пациента (попыток в час на одного опекуна)
+    caregiver_link_attempts_per_hour: int = 30
 
 
 settings = Settings()

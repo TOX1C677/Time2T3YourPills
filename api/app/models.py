@@ -101,5 +101,19 @@ class IntakeEvent(Base):
     snooze_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class MissedIntakeAlert(Base):
+    __tablename__ = "missed_intake_alerts"
+    __table_args__ = (
+        UniqueConstraint("patient_user_id", "medication_id", "due_at", name="uq_missed_patient_med_due"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    patient_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    medication_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("medications.id", ondelete="CASCADE"), index=True)
+    due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    notified_caregiver_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 def generate_link_token() -> str:
     return secrets.token_urlsafe(32)

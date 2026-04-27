@@ -108,3 +108,15 @@ class MedicationUpsert(BaseModel):
     reminder_mode: str = Field(pattern="^(interval|schedule)$")
     interval_minutes: int | None = None
     slot_times: list[str] | None = None
+
+
+class MissedIntakeAlertOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    patient_user_id: UUID
+    patient_display_name: str
+    medication_id: UUID
+    medication_name: str
+    due_at: datetime
+    detected_at: datetime
