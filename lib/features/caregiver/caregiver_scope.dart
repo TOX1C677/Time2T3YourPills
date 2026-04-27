@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../auth/auth_session.dart';
@@ -46,16 +47,26 @@ class CaregiverScope extends ChangeNotifier {
       clear();
       return;
     }
-    final res = await _auth.dio.get<List<dynamic>>('/v1/caregiver/patients');
-    final list = (res.data ?? [])
-        .map((e) => CaregiverPatientOption.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList();
-    _patients = list;
-    if (_selectedPatientUserId == null && list.isNotEmpty) {
-      _selectedPatientUserId = list.first.patientUserId;
-    } else if (_selectedPatientUserId != null &&
-        !list.any((p) => p.patientUserId == _selectedPatientUserId)) {
-      _selectedPatientUserId = list.isNotEmpty ? list.first.patientUserId : null;
+    try {
+      final res = await _auth.dio.get<List<dynamic>>('/v1/caregiver/patients');
+      final list = (res.data ?? [])
+          .map((e) => CaregiverPatientOption.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      _patients = list;
+      if (_selectedPatientUserId == null && list.isNotEmpty) {
+        _selectedPatientUserId = list.first.patientUserId;
+      } else if (_selectedPatientUserId != null &&
+          !list.any((p) => p.patientUserId == _selectedPatientUserId)) {
+        _selectedPatientUserId = list.isNotEmpty ? list.first.patientUserId : null;
+      }
+    } catch (e) {
+      // 401: просрочен refresh, другой JWT_SECRET на проде, токены от локального API и т.д.
+      final code = e is DioException ? e.response?.statusCode : null;
+      if (code == 401) {
+        clear();
+        await _auth.logout();
+      }
+      // остальное (сеть) — оставляем предыдущий список
     }
     notifyListeners();
   }
@@ -76,8 +87,9 @@ class CaregiverPatientOption {
     final id = j['patient_user_id']?.toString() ?? '';
     final dn = j['display_name'] as String? ?? '';
     final fn = j['first_name'] as String? ?? '';
+    final ln = j['last_name'] as String? ?? '';
     final mn = j['middle_name'] as String? ?? '';
-    final composed = '$fn $mn'.trim();
+    final composed = [fn, ln, mn].where((s) => s.trim().isNotEmpty).join(' ');
     final label = composed.isNotEmpty ? composed : (dn.isNotEmpty ? dn : id);
     return CaregiverPatientOption(patientUserId: id, label: label);
   }

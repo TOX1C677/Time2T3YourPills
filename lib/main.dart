@@ -49,13 +49,15 @@ Future<void> main() async {
   await appServices.init();
 
   if (auth.isAuthenticated) {
-    await caregiverScope.refreshFromApi();
-    if (auth.role == 'caregiver') {
-      await caregiverScope.refreshMissedAlertsCount();
-    }
     try {
+      await caregiverScope.refreshFromApi();
+      if (auth.role == 'caregiver') {
+        await caregiverScope.refreshMissedAlertsCount();
+      }
       await appServices.syncRemoteNow();
-    } catch (_) {}
+    } catch (_) {
+      // Сеть или 401 до очистки сессии — не роняем `main`, роутер покажет вход при необходимости.
+    }
   }
 
   final intakeTimer = IntakeTimerController(appServices);
