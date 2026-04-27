@@ -7,7 +7,7 @@
 | Путь | Назначение |
 |------|------------|
 | `lib/` | Flutter-приложение (Provider + `AppServices`, go_router, GetStorage, синк с API через `ApiRemoteDataSource`). |
-| `api/` | REST API (FastAPI, JWT, SQLite по умолчанию / Postgres в `db/`). |
+| `api/` | REST API (FastAPI, JWT, SQLite по умолчанию / Postgres в `db/`). Запуск и Alembic: **`api/README.md`**. |
 | `db/` | Docker Compose для PostgreSQL, заметки по миграциям. |
 | `.github/workflows/ci.yml` | CI: pytest для `api/`, `flutter analyze` + тесты. |
 | `legacy_android/` | Прежний Java/Room проект — только справка, сборка из этой папки. |
@@ -25,7 +25,11 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
+**PostgreSQL:** после `DATABASE_URL=postgresql+…` выполните **`alembic upgrade head`** (схема из миграций; подробности в **`api/README.md`**). Для **SQLite** локально таблицы создаются при старте приложения.
+
 PostgreSQL для разработки: `cd db && docker compose up -d` (см. `db/README.md`).
+
+**Выход из аккаунта:** клиент вызывает **`POST /v1/auth/logout`** с refresh-токеном; токен помечается отозванным на сервере.
 
 Flutter по умолчанию ходит на `http://127.0.0.1:8000`. **Эмулятор Android** к хосту:  
 `flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000`  

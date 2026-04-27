@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../app/theme/app_sizes.dart';
 import '../../core/models/missed_intake_alert.dart';
 import '../auth/auth_session.dart';
+import 'caregiver_scope.dart';
 
 /// Список пропусков по привязанным пациентам (только роль опекуна).
 class CaregiverAlertsScreen extends StatefulWidget {
@@ -50,6 +51,7 @@ class _CaregiverAlertsScreenState extends State<CaregiverAlertsScreen> {
           _items = list;
           _loading = false;
         });
+        await context.read<CaregiverScope>().refreshMissedAlertsCount();
       }
     } on DioException catch (e) {
       final d = e.response?.data;

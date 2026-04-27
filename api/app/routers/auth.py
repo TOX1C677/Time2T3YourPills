@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import PatientProfile, User, UserRole, generate_link_token
+from app.models import PatientProfile, RevokedRefreshJti, User, UserRole, generate_link_token
 from app.schemas import LoginRequest, RefreshRequest, RegisterRequest, TokenResponse
 from app.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
 from app.config import settings
@@ -61,6 +61,25 @@ def login(body: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
     return _token_bundle(user)
 
 
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(body: RefreshRequest, db: Session = Depends(get_db)) -> None:
+    """Инвалидация refresh по `jti` (клиент очищает хранилище после вызова)."""
+    try:
+        payload = decode_token(body.refresh_token)
+    except Exception:
+        return None
+    if payload.get("type") != "refresh":
+        return None
+    jti = payload.get("jti")
+    if not jti:
+        return None
+    sid = str(jti)
+    if db.get(RevokedRefreshJti, sid) is None:
+        db.add(RevokedRefreshJti(jti=sid))
+        db.commit()
+    return None
+
+
 @router.post("/refresh", response_model=TokenResponse)
 def refresh_token(body: RefreshRequest, db: Session = Depends(get_db)) -> TokenResponse:
     try:
@@ -69,6 +88,11 @@ def refresh_token(body: RefreshRequest, db: Session = Depends(get_db)) -> TokenR
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token") from None
     if payload.get("type") != "refresh":
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token type")
+    jti = payload.get("jti")
+    if jti:
+        if db.get(RevokedRefreshJti, str(jti)) is not None:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Refresh token revoked")
+
     from uuid import UUID
 
     uid = UUID(str(payload["sub"]))

@@ -11,6 +11,8 @@
 .DS_Store
 /build
 /captures
+api/data/empty_mig.db
+api/data/ci_alembic.db
 .externalNativeBuild
 .cxx
 local.properties

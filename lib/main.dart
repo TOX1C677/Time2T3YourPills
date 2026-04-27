@@ -50,6 +50,9 @@ Future<void> main() async {
 
   if (auth.isAuthenticated) {
     await caregiverScope.refreshFromApi();
+    if (auth.role == 'caregiver') {
+      await caregiverScope.refreshMissedAlertsCount();
+    }
     try {
       await appServices.syncRemoteNow();
     } catch (_) {}

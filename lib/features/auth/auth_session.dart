@@ -35,7 +35,8 @@ class AuthSession extends ChangeNotifier {
           final path = err.requestOptions.path;
           if (path.contains('/v1/auth/login') ||
               path.contains('/v1/auth/register') ||
-              path.contains('/v1/auth/refresh')) {
+              path.contains('/v1/auth/refresh') ||
+              path.contains('/v1/auth/logout')) {
             return handler.next(err);
           }
           try {
@@ -163,6 +164,12 @@ class AuthSession extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    final rt = _refreshToken ?? await _storage.read(key: _kRefresh);
+    if (rt != null && rt.isNotEmpty) {
+      try {
+        await _dio.post<void>('/v1/auth/logout', data: {'refresh_token': rt});
+      } catch (_) {}
+    }
     _accessToken = null;
     _refreshToken = null;
     _role = null;

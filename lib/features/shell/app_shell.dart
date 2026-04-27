@@ -4,12 +4,20 @@ import 'package:provider/provider.dart';
 
 import '../../app/theme/app_sizes.dart';
 import '../auth/auth_session.dart';
+import '../caregiver/caregiver_scope.dart';
 import '../connectivity/connectivity_notifier.dart';
 
-class AppShell extends StatelessWidget {
+class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
+
+  @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  StatefulNavigationShell get navigationShell => widget.navigationShell;
 
   static const _patientDestinations = [
     NavigationDestination(
@@ -34,28 +42,51 @@ class AppShell extends StatelessWidget {
     ),
   ];
 
-  static const _caregiverDestinations = [
-    NavigationDestination(
-      icon: Icon(Icons.medication_outlined),
-      selectedIcon: Icon(Icons.medication),
-      label: 'Таблетки',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.history_outlined),
-      selectedIcon: Icon(Icons.history),
-      label: 'История',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.person_outline),
-      selectedIcon: Icon(Icons.person),
-      label: 'Профиль',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = context.read<AuthSession>();
+      if (auth.isAuthenticated && auth.role == 'caregiver') {
+        context.read<CaregiverScope>().refreshMissedAlertsCount();
+      }
+    });
+  }
+
+  List<NavigationDestination> _caregiverDestinations(int missedCount) {
+    Widget profileIcon(IconData iconData) {
+      if (missedCount <= 0) {
+        return Icon(iconData);
+      }
+      final label = missedCount > 99 ? '99+' : '$missedCount';
+      return Badge(label: Text(label), child: Icon(iconData));
+    }
+
+    return [
+      const NavigationDestination(
+        icon: Icon(Icons.medication_outlined),
+        selectedIcon: Icon(Icons.medication),
+        label: 'Таблетки',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.history_outlined),
+        selectedIcon: Icon(Icons.history),
+        label: 'История',
+      ),
+      NavigationDestination(
+        icon: profileIcon(Icons.person_outline),
+        selectedIcon: profileIcon(Icons.person),
+        label: 'Профиль',
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     final offline = context.watch<ConnectivityNotifier>().isOffline;
     final auth = context.watch<AuthSession>();
+    final cg = context.watch<CaregiverScope>();
     final isCaregiver = auth.isAuthenticated && auth.role == 'caregiver';
 
     int caregiverSelectedDisplay() {
@@ -68,6 +99,7 @@ class AppShell extends StatelessWidget {
 
     void onCaregiverSelect(int displayIndex) {
       navigationShell.goBranch(displayIndex + 1);
+      context.read<CaregiverScope>().refreshMissedAlertsCount();
     }
 
     return Scaffold(
@@ -80,7 +112,7 @@ class AppShell extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: isCaregiver ? caregiverSelectedDisplay() : navigationShell.currentIndex,
         onDestinationSelected: isCaregiver ? onCaregiverSelect : navigationShell.goBranch,
-        destinations: isCaregiver ? _caregiverDestinations : _patientDestinations,
+        destinations: isCaregiver ? _caregiverDestinations(cg.missedAlertsCount) : _patientDestinations,
       ),
     );
   }

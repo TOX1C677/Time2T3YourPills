@@ -58,3 +58,20 @@ def test_refresh_token(client):
     body = r.json()
     assert body["role"] == "caregiver"
     assert "access_token" in body and "refresh_token" in body
+
+
+def test_logout_revokes_refresh_token(client):
+    reg = client.post(
+        "/v1/auth/register",
+        json={
+            "email": "out@example.com",
+            "password": "secret12",
+            "display_name": "O",
+            "role": "patient",
+        },
+    ).json()
+    rt = reg["refresh_token"]
+    lo = client.post("/v1/auth/logout", json={"refresh_token": rt})
+    assert lo.status_code == 204
+    r2 = client.post("/v1/auth/refresh", json={"refresh_token": rt})
+    assert r2.status_code == 401

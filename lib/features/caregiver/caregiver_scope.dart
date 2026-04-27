@@ -10,14 +10,34 @@ class CaregiverScope extends ChangeNotifier {
 
   List<CaregiverPatientOption> _patients = [];
   String? _selectedPatientUserId;
+  int _missedAlertsCount = 0;
 
   List<CaregiverPatientOption> get patients => List.unmodifiable(_patients);
 
   String? get selectedPatientUserId => _selectedPatientUserId;
 
+  /// Число записей `GET /v1/caregiver/alerts` (для бейджа в shell).
+  int get missedAlertsCount => _missedAlertsCount;
+
   void clear() {
     _patients = [];
     _selectedPatientUserId = null;
+    _missedAlertsCount = 0;
+    notifyListeners();
+  }
+
+  Future<void> refreshMissedAlertsCount() async {
+    if (_auth.role != 'caregiver' || !_auth.isAuthenticated) {
+      _missedAlertsCount = 0;
+      notifyListeners();
+      return;
+    }
+    try {
+      final res = await _auth.dio.get<List<dynamic>>('/v1/caregiver/alerts');
+      _missedAlertsCount = (res.data ?? []).length;
+    } catch (_) {
+      // оставляем предыдущее значение
+    }
     notifyListeners();
   }
 

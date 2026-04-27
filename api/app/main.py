@@ -12,7 +12,7 @@ from app.routers import auth, caregiver, health, patients, system
 async def lifespan(_: FastAPI):
     if settings.database_url.startswith("sqlite"):
         Path("data").mkdir(parents=True, exist_ok=True)
-    Base.metadata.create_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
     yield
 
 

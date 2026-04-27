@@ -101,6 +101,15 @@ class IntakeEvent(Base):
     snooze_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class RevokedRefreshJti(Base):
+    """Отозванные refresh-токены по claim `jti` (POST /auth/logout)."""
+
+    __tablename__ = "revoked_refresh_jtis"
+
+    jti: Mapped[str] = mapped_column(String(64), primary_key=True)
+    revoked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class MissedIntakeAlert(Base):
     __tablename__ = "missed_intake_alerts"
     __table_args__ = (

@@ -22,6 +22,10 @@ jobs:
           cache-dependency-path: api/requirements.txt
       - name: Install dependencies
         run: pip install -r requirements.txt
+      - name: Alembic migration (SQLite smoke)
+        run: |
+          rm -f data/ci_alembic.db
+          DATABASE_URL=sqlite:///./data/ci_alembic.db alembic upgrade head
       - name: Run tests
         run: pytest tests/ -v
 

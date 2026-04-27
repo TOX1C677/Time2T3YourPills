@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import smtplib
 import ssl
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from email.message import EmailMessage
 from uuid import UUID
 
@@ -112,3 +112,20 @@ def send_missed_alert_emails(db: Session, alert_ids: list[UUID]) -> int:
     if delivered:
         db.commit()
     return delivered
+
+
+def retry_pending_missed_alert_emails(db: Session, *, limit: int = 50) -> int:
+    """Повторная отправка писем для алертов без `notified_caregiver_at` (до [limit] за вызов)."""
+    if not settings.smtp_host.strip():
+        return 0
+    now = datetime.now(UTC)
+    ids = db.scalars(
+        select(MissedIntakeAlert.id)
+        .where(
+            MissedIntakeAlert.notified_caregiver_at.is_(None),
+            MissedIntakeAlert.detected_at >= now - timedelta(days=7),
+        )
+        .order_by(MissedIntakeAlert.detected_at.asc())
+        .limit(limit)
+    ).all()
+    return send_missed_alert_emails(db, list(ids))
