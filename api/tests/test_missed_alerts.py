@@ -61,7 +61,119 @@ def test_worker_scan_creates_missed_alert(client: TestClient, monkeypatch):
 
     scan = client.post("/v1/system/missed-intake-scan", headers={"X-Worker-Key": "wk-test"})
     assert scan.status_code == 200
+    body = scan.json()
+    assert body["new_alerts"] >= 1
+    assert body.get("emails_sent", 0) == 0
+
+
+def test_worker_schedule_missed_alert(client: TestClient, monkeypatch):
+    monkeypatch.setattr(config.settings, "worker_api_key", "wk-sch", raising=False)
+    monkeypatch.setattr(config.settings, "missed_intake_grace_minutes", 0, raising=False)
+
+    reg = client.post(
+        "/v1/auth/register",
+        json={
+            "email": "miss_pat_sched@example.com",
+            "password": "secret12",
+            "display_name": "MPS",
+            "role": "patient",
+        },
+    ).json()
+    h = _auth(reg["access_token"])
+    assert client.patch("/v1/patients/me/profile", headers=h, json={"timezone": "UTC"}).status_code == 200
+
+    past = datetime.now(UTC) - timedelta(hours=2)
+    slot = f"{past.hour:02d}:{past.minute:02d}"
+    mid = str(uuid.uuid4())
+    assert (
+        client.put(
+            f"/v1/patients/me/medications/{mid}",
+            headers=h,
+            json={
+                "name": "По расписанию",
+                "dosage": "",
+                "reminder_mode": "schedule",
+                "interval_minutes": None,
+                "slot_times": [slot],
+            },
+        ).status_code
+        == 200
+    )
+
+    scan = client.post("/v1/system/missed-intake-scan", headers={"X-Worker-Key": "wk-sch"})
+    assert scan.status_code == 200
     assert scan.json()["new_alerts"] >= 1
+
+
+def test_worker_sends_email_when_smtp_stubbed(client: TestClient, monkeypatch):
+    sent: list[tuple[str, list[str]]] = []
+
+    def fake_smtp(msg, recipients):
+        sent.append((msg["Subject"], list(recipients)))
+
+    monkeypatch.setattr(config.settings, "worker_api_key", "wk-mail", raising=False)
+    monkeypatch.setattr(config.settings, "missed_intake_grace_minutes", 0, raising=False)
+    monkeypatch.setattr(config.settings, "smtp_host", "localhost", raising=False)
+    monkeypatch.setattr(config.settings, "smtp_from_email", "noreply@example.com", raising=False)
+    monkeypatch.setattr("app.services.caregiver_email._smtp_send", fake_smtp)
+
+    patient = client.post(
+        "/v1/auth/register",
+        json={
+            "email": "miss_pat_mail@example.com",
+            "password": "secret12",
+            "display_name": "MPM",
+            "role": "patient",
+        },
+    ).json()
+    ph = _auth(patient["access_token"])
+    code = client.get("/v1/patients/me/invite-code", headers=ph).json()["token"]
+
+    caregiver = client.post(
+        "/v1/auth/register",
+        json={
+            "email": "miss_cg_mail@example.com",
+            "password": "secret12",
+            "display_name": "MCGM",
+            "role": "caregiver",
+        },
+    ).json()
+    ch = _auth(caregiver["access_token"])
+    assert client.post("/v1/caregiver/link-patient", headers=ch, json={"token": code}).status_code == 200
+
+    mid = str(uuid.uuid4())
+    client.put(
+        f"/v1/patients/me/medications/{mid}",
+        headers=ph,
+        json={
+            "name": "ДляПисьма",
+            "dosage": "",
+            "reminder_mode": "interval",
+            "interval_minutes": 60,
+            "slot_times": None,
+        },
+    )
+    last_due = datetime.now(UTC).replace(microsecond=0) - timedelta(hours=3)
+    client.post(
+        "/v1/patients/me/intake-events",
+        headers=ph,
+        json={
+            "medication_id": mid,
+            "scheduled_at": last_due.isoformat(),
+            "recorded_at": last_due.isoformat(),
+            "status": "confirmed",
+            "medication_name_snapshot": "ДляПисьма",
+            "dosage_snapshot": "",
+            "source": "patient_app",
+        },
+    )
+
+    scan = client.post("/v1/system/missed-intake-scan", headers={"X-Worker-Key": "wk-mail"})
+    assert scan.status_code == 200
+    assert scan.json()["new_alerts"] >= 1
+    assert scan.json()["emails_sent"] >= 1
+    assert len(sent) >= 1
+    assert "ДляПисьма" in sent[0][0]
 
 
 def test_caregiver_lists_missed_alerts(client: TestClient, monkeypatch):

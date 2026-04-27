@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.services.caregiver_email import send_missed_alert_emails
 from app.services.missed_intake_scan import run_missed_intake_scan
 
 router = APIRouter(prefix="/system", tags=["system"])
@@ -21,5 +22,6 @@ def missed_intake_scan(
         )
     if not x_worker_key or x_worker_key != settings.worker_api_key:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Неверный ключ worker")
-    n = run_missed_intake_scan(db, settings.missed_intake_grace_minutes)
-    return {"new_alerts": n}
+    created = run_missed_intake_scan(db, settings.missed_intake_grace_minutes)
+    emailed = send_missed_alert_emails(db, [a.id for a in created])
+    return {"new_alerts": len(created), "emails_sent": emailed}
