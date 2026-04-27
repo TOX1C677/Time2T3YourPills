@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     missed_intake_grace_minutes: int = 45
     # Rate limit привязки пациента (попыток в час на одного опекуна)
     caregiver_link_attempts_per_hour: int = 30
+    # Лимит чтения кода привязки пациентом (GET invite-code в час)
+    patient_invite_code_reads_per_hour: int = 60
 
 
 settings = Settings()

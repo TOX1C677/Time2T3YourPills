@@ -26,12 +26,6 @@ class MedicationsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Таблетки'),
         actions: [
-          if (auth.isAuthenticated)
-            IconButton(
-              icon: const Icon(Icons.history),
-              tooltip: 'История приёмов',
-              onPressed: () => context.push('/intake-history'),
-            ),
           if (auth.isAuthenticated && auth.role == 'caregiver' && cg.patients.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(left: 8, right: 12),

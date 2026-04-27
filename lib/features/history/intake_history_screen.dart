@@ -9,8 +9,12 @@ import '../auth/auth_session.dart';
 import '../caregiver/caregiver_scope.dart';
 
 /// История приёмов: пациент — свои события; опекун — выбранный пациент из [CaregiverScope].
+///
+/// [embeddedInShell]: вкладка нижнего меню — без кнопки «назад» (см. план §7.2).
 class IntakeHistoryScreen extends StatefulWidget {
-  const IntakeHistoryScreen({super.key});
+  const IntakeHistoryScreen({super.key, this.embeddedInShell = false});
+
+  final bool embeddedInShell;
 
   @override
   State<IntakeHistoryScreen> createState() => _IntakeHistoryScreenState();
@@ -128,7 +132,10 @@ class _IntakeHistoryScreenState extends State<IntakeHistoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('История приёмов'),
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.pop()),
+        automaticallyImplyLeading: !widget.embeddedInShell,
+        leading: widget.embeddedInShell
+            ? null
+            : IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.pop()),
       ),
       body: RefreshIndicator(
         onRefresh: _load,

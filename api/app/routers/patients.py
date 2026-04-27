@@ -6,8 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.deps import require_patient
+from app.rate_limit import enforce_hourly_limit
 from app.models import IntakeEvent
 from app.models import Medication as MedRow
 from app.models import PatientProfile, User
@@ -29,6 +31,11 @@ def get_invite_code(
     user: Annotated[User, Depends(require_patient)],
     db: Session = Depends(get_db),
 ) -> InviteCodeOut:
+    enforce_hourly_limit(
+        f"patient_invite_code:{user.id}",
+        settings.patient_invite_code_reads_per_hour,
+        "Слишком частый запрос кода, подождите час",
+    )
     profile = db.get(PatientProfile, user.id)
     if profile is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Patient profile missing")

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../app/theme/app_sizes.dart';
+import '../auth/auth_session.dart';
 import '../connectivity/connectivity_notifier.dart';
 
 class AppShell extends StatelessWidget {
@@ -10,9 +11,64 @@ class AppShell extends StatelessWidget {
 
   final StatefulNavigationShell navigationShell;
 
+  static const _patientDestinations = [
+    NavigationDestination(
+      icon: Icon(Icons.timer_outlined),
+      selectedIcon: Icon(Icons.timer),
+      label: 'Таймер',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.medication_outlined),
+      selectedIcon: Icon(Icons.medication),
+      label: 'Таблетки',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.history_outlined),
+      selectedIcon: Icon(Icons.history),
+      label: 'История',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.person_outline),
+      selectedIcon: Icon(Icons.person),
+      label: 'Профиль',
+    ),
+  ];
+
+  static const _caregiverDestinations = [
+    NavigationDestination(
+      icon: Icon(Icons.medication_outlined),
+      selectedIcon: Icon(Icons.medication),
+      label: 'Таблетки',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.history_outlined),
+      selectedIcon: Icon(Icons.history),
+      label: 'История',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.person_outline),
+      selectedIcon: Icon(Icons.person),
+      label: 'Профиль',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final offline = context.watch<ConnectivityNotifier>().isOffline;
+    final auth = context.watch<AuthSession>();
+    final isCaregiver = auth.isAuthenticated && auth.role == 'caregiver';
+
+    int caregiverSelectedDisplay() {
+      final i = navigationShell.currentIndex;
+      if (i <= 0) {
+        return 0;
+      }
+      return i - 1;
+    }
+
+    void onCaregiverSelect(int displayIndex) {
+      navigationShell.goBranch(displayIndex + 1);
+    }
 
     return Scaffold(
       body: Column(
@@ -22,25 +78,9 @@ class AppShell extends StatelessWidget {
         ],
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: navigationShell.goBranch,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.timer_outlined),
-            selectedIcon: Icon(Icons.timer),
-            label: 'Таймер',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.medication_outlined),
-            selectedIcon: Icon(Icons.medication),
-            label: 'Таблетки',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Профиль',
-          ),
-        ],
+        selectedIndex: isCaregiver ? caregiverSelectedDisplay() : navigationShell.currentIndex,
+        onDestinationSelected: isCaregiver ? onCaregiverSelect : navigationShell.goBranch,
+        destinations: isCaregiver ? _caregiverDestinations : _patientDestinations,
       ),
     );
   }

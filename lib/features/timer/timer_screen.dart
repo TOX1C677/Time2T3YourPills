@@ -127,7 +127,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
       appBar: AppBar(
         title: const Text('Таймер'),
         actions: [
-          if (auth.isAuthenticated)
+          if (auth.isAuthenticated && auth.role == 'patient')
             IconButton(
               icon: const Icon(Icons.history),
               tooltip: 'История приёмов',

@@ -14,19 +14,31 @@ import '../../features/profile/profile_screen.dart';
 import '../../features/shell/app_shell.dart';
 import '../../features/timer/timer_screen.dart';
 
+String _shellHomeForRole(String? role) {
+  if (role == 'caregiver') {
+    return '/medications';
+  }
+  return '/timer';
+}
+
 GoRouter createAppRouter(AuthSession auth) {
   return GoRouter(
-    initialLocation: auth.isAuthenticated ? '/timer' : '/login',
+    initialLocation: auth.isAuthenticated ? _shellHomeForRole(auth.role) : '/login',
     refreshListenable: auth,
     redirect: (BuildContext context, GoRouterState state) {
       final loc = state.matchedLocation;
       final public = loc == '/login' || loc == '/register';
-      final authed = Provider.of<AuthSession>(context, listen: false).isAuthenticated;
+      final session = Provider.of<AuthSession>(context, listen: false);
+      final authed = session.isAuthenticated;
+      final role = session.role;
       if (!authed && !public) {
         return '/login';
       }
       if (authed && public) {
-        return '/timer';
+        return _shellHomeForRole(role);
+      }
+      if (authed && role == 'caregiver' && loc == '/timer') {
+        return '/medications';
       }
       return null;
     },
@@ -61,6 +73,16 @@ GoRouter createAppRouter(AuthSession auth) {
                 path: '/medications',
                 name: 'medications',
                 pageBuilder: (context, state) => const NoTransitionPage<void>(child: MedicationsScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/history',
+                name: 'history_tab',
+                pageBuilder: (context, state) =>
+                    const NoTransitionPage<void>(child: IntakeHistoryScreen(embeddedInShell: true)),
               ),
             ],
           ),

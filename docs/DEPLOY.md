@@ -12,6 +12,7 @@
 
 - `MISSED_INTAKE_GRACE_MINUTES` — через сколько минут после планового времени считать приём пропущенным (по умолчанию 45).
 - `CAREGIVER_LINK_ATTEMPTS_PER_HOUR` — лимит попыток привязки пациента на одного опекуна в час (по умолчанию 30).
+- `PATIENT_INVITE_CODE_READS_PER_HOUR` — лимит запросов `GET .../invite-code` на одного пациента в час (по умолчанию 60).
 
 ## Сканер пропусков (`POST /v1/system/missed-intake-scan`)
 
