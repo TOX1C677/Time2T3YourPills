@@ -2,6 +2,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: time2t3_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: time2t3
       POSTGRES_PASSWORD: time2t3

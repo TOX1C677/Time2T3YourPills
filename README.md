@@ -29,9 +29,31 @@ PostgreSQL для разработки: `cd db && docker compose up -d` (см. `
 
 Flutter по умолчанию ходит на `http://127.0.0.1:8000`. **Эмулятор Android** к хосту:  
 `flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000`  
-Прод или другой хост: `--dart-define=API_BASE_URL=https://api.example.com`
+Прод или другой хост: `--dart-define=API_BASE_URL=https://…` (см. ниже).
 
 После старта API: экран **«Вход»** → регистрация или логин.
+
+### Развёрнутый сервер (актуальная проверка)
+
+| Компонент | Состояние |
+|-----------|-----------|
+| **БД** | Контейнер `time2t3_postgres`, `healthy`; на хосте часто порт **5433** → 5432 внутри контейнера. |
+| **API** | `uvicorn` на `0.0.0.0:8000`, в проде за nginx/Let’s Encrypt — публичный базовый URL **`https://api.anti-toxic.ru`**. Конфиг окружения на сервере (например `time2t3-api.env`): PostgreSQL на **`127.0.0.1:5433`**. |
+| **Контракт** | Swagger: `https://api.anti-toxic.ru/docs`; реальные маршруты с префиксом **`/v1/...`** (auth и остальное). Проверка: `GET https://api.anti-toxic.ru/health` → `{"status":"ok"}`. |
+
+Сборка/запуск Flutter против этого API:
+
+```bash
+flutter run --dart-define=API_BASE_URL=https://api.anti-toxic.ru
+```
+
+Проверка с телефона или ПК (не из песочницы CI):
+
+```bash
+curl -sS https://api.anti-toxic.ru/health
+```
+
+**После перезагрузки VPS** контейнер БД поднимется сам, если в реально используемом compose стоит **`restart: unless-stopped`** (в `db/docker-compose.yml` репозитория так и сделано — перенесите на сервер при деплое). Процесс **API (uvicorn)** после reboot сам не стартует, пока для него не настроен **systemd** (или другой supervisor) — иначе нужен ручной запуск. На разработку UI это не мешает, пока сервер не перезагружали.
 
 ## Запуск (Flutter)
 
