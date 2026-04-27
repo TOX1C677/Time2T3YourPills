@@ -7,6 +7,7 @@ import '../../features/auth/auth_session.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/medications/add_medication_screen.dart';
+import '../../features/history/intake_history_screen.dart';
 import '../../features/medications/medications_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/shell/app_shell.dart';
@@ -77,6 +78,11 @@ GoRouter createAppRouter(AuthSession auth) {
         path: '/about',
         name: 'about',
         builder: (context, state) => const AboutScreen(),
+      ),
+      GoRoute(
+        path: '/intake-history',
+        name: 'intake_history',
+        builder: (context, state) => const IntakeHistoryScreen(),
       ),
       GoRoute(
         path: '/medications/add',

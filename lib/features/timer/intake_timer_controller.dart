@@ -174,6 +174,15 @@ class IntakeTimerController extends ChangeNotifier {
     for (final id in ids) {
       final m = _medById(id);
       if (m == null) continue;
+      final due = _nextDue[id];
+      if (due != null) {
+        await _services.recordIntakeConfirmed(
+          medicationId: id,
+          scheduledAt: due,
+          medicationName: m.name,
+          dosage: m.dosage,
+        );
+      }
       if (m.reminderMode == ReminderMode.fixedInterval && m.intervalMinutes != null && m.intervalMinutes! > 0) {
         _nextDue[id] = now.add(Duration(minutes: m.intervalMinutes!));
       } else {

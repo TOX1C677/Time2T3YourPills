@@ -34,6 +34,12 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - `PUT /v1/caregiver/patients/{patient_user_id}/medications/{medication_id}`
 - `DELETE /v1/caregiver/patients/{patient_user_id}/medications/{medication_id}`
 
+### История приёмов (intake events)
+
+- `POST /v1/patients/me/intake-events` — тело: `medication_id` (опц.), `scheduled_at`, `recorded_at`, `status` (`confirmed` \| `missed` \| `snoozed`), `medication_name_snapshot`, `dosage_snapshot`, `source`, опц. `snooze_until`.
+- `GET /v1/patients/me/intake-events?from=&to=` — фильтр по `recorded_at` (ISO), без query — вся история.
+- `GET /v1/caregiver/patients/{patient_user_id}/intake-events?from=&to=` — история выбранного пациента для опекуна.
+
 ## Переменные окружения
 
 | Переменная | Описание | По умолчанию |

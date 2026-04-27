@@ -164,6 +164,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: const Icon(Icons.more_vert),
             tooltip: 'Ещё',
             onSelected: (value) async {
+              if (value == 'history') {
+                if (!mounted) return;
+                context.push('/intake-history');
+              }
               if (value == 'about') {
                 if (!mounted) return;
                 context.push('/about');
@@ -179,6 +183,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }
             },
             itemBuilder: (context) => const [
+              PopupMenuItem(value: 'history', child: Text('История приёмов')),
               PopupMenuItem(value: 'about', child: Text('О приложении')),
               PopupMenuItem(value: 'logout', child: Text('Выйти')),
             ],

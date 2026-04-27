@@ -2,15 +2,16 @@ from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import require_caregiver
-from app.models import CaregiverPatientLink, Medication as MedRow
+from app.models import CaregiverPatientLink, IntakeEvent
+from app.models import Medication as MedRow
 from app.models import PatientProfile, User, UserRole
-from app.schemas import CaregiverPatientOut, LinkPatientRequest, MedicationOut, MedicationUpsert
+from app.schemas import CaregiverPatientOut, IntakeEventOut, LinkPatientRequest, MedicationOut, MedicationUpsert
 
 router = APIRouter(prefix="/caregiver", tags=["caregiver"])
 
@@ -160,3 +161,25 @@ def delete_patient_medication(
     db.add(row)
     db.commit()
     return None
+
+
+@router.get("/patients/{patient_user_id}/intake-events", response_model=list[IntakeEventOut])
+def list_patient_intake_events(
+    patient_user_id: UUID,
+    caregiver: Annotated[User, Depends(require_caregiver)],
+    db: Session = Depends(get_db),
+    from_: datetime | None = Query(None, alias="from"),
+    to_: datetime | None = Query(None, alias="to"),
+) -> list[IntakeEvent]:
+    _assert_caregiver_linked(db, caregiver.id, patient_user_id)
+    stmt = (
+        select(IntakeEvent)
+        .where(IntakeEvent.patient_user_id == patient_user_id)
+        .order_by(IntakeEvent.recorded_at.desc())
+    )
+    if from_ is not None:
+        stmt = stmt.where(IntakeEvent.recorded_at >= from_)
+    if to_ is not None:
+        stmt = stmt.where(IntakeEvent.recorded_at <= to_)
+    rows = db.scalars(stmt).all()
+    return list(rows)

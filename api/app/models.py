@@ -84,5 +84,22 @@ class Medication(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class IntakeEvent(Base):
+    __tablename__ = "intake_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    patient_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    medication_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("medications.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    medication_name_snapshot: Mapped[str] = mapped_column(String(500), default="")
+    dosage_snapshot: Mapped[str] = mapped_column(String(200), default="")
+    scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    source: Mapped[str] = mapped_column(String(32), default="patient_app", nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    snooze_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 def generate_link_token() -> str:
     return secrets.token_urlsafe(32)

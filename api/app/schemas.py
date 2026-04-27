@@ -74,6 +74,32 @@ class MedicationOut(BaseModel):
     updated_at: datetime | None = None
 
 
+class IntakeEventCreate(BaseModel):
+    medication_id: UUID | None = None
+    scheduled_at: datetime
+    recorded_at: datetime
+    status: str = Field(default="confirmed", pattern="^(confirmed|missed|snoozed)$")
+    medication_name_snapshot: str = Field(default="", max_length=500)
+    dosage_snapshot: str = Field(default="", max_length=200)
+    source: str = Field(default="patient_app", pattern="^(patient_app|caregiver_override|system)$")
+    snooze_until: datetime | None = None
+
+
+class IntakeEventOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    patient_user_id: UUID
+    medication_id: UUID | None
+    medication_name_snapshot: str
+    dosage_snapshot: str
+    scheduled_at: datetime
+    recorded_at: datetime
+    source: str
+    status: str
+    snooze_until: datetime | None = None
+
+
 class MedicationUpsert(BaseModel):
     """Тело PUT: создание или полная замена полей (клиент задаёт id в path)."""
 

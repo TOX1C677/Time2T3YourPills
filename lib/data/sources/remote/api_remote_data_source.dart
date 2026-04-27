@@ -103,6 +103,12 @@ class ApiRemoteDataSource implements RemoteSyncDataSource {
     }
   }
 
+  /// Запись подтверждённого приёма (только пациент).
+  Future<void> postIntakeEvent(Map<String, dynamic> body) async {
+    if (_auth.role != 'patient') return;
+    await _auth.dio.post<Map<String, dynamic>>('/v1/patients/me/intake-events', data: body);
+  }
+
   Future<void> _patchPatientProfile(Map<String, Object?> map) async {
     await _auth.dio.patch<Map<String, dynamic>>(
       '/v1/patients/me/profile',
@@ -131,6 +137,10 @@ class ApiRemoteDataSource implements RemoteSyncDataSource {
         if (_auth.role != 'patient') continue;
         final map = Map<String, Object?>.from(jsonDecode(e.payloadJson) as Map);
         await _patchPatientProfile(map);
+      } else if (e.type == 'intake_event') {
+        if (_auth.role != 'patient') continue;
+        final map = Map<String, dynamic>.from(jsonDecode(e.payloadJson) as Map);
+        await postIntakeEvent(map);
       }
     }
   }

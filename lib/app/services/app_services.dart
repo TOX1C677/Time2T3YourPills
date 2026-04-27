@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import '../../data/repositories/medications_repository.dart';
 import '../../data/repositories/outbox_repository.dart';
 import '../../data/repositories/patient_repository.dart';
+import '../../data/sources/remote/api_remote_data_source.dart';
 import '../../data/sources/remote/remote_sync_data_source.dart';
 import '../storage/key_value_store.dart';
 import 'notification_service.dart';
@@ -49,6 +52,34 @@ class AppServices {
     final p = await remote.fetchPatient();
     if (p != null) {
       await patient.persistLocal(p);
+    }
+  }
+
+  /// Запись подтверждённого приёма на сервер; при ошибке сети — в outbox (`intake_event`).
+  Future<void> recordIntakeConfirmed({
+    required String medicationId,
+    required DateTime scheduledAt,
+    required String medicationName,
+    required String dosage,
+  }) async {
+    final body = <String, dynamic>{
+      'medication_id': medicationId,
+      'scheduled_at': scheduledAt.toUtc().toIso8601String(),
+      'recorded_at': DateTime.now().toUtc().toIso8601String(),
+      'status': 'confirmed',
+      'medication_name_snapshot': medicationName,
+      'dosage_snapshot': dosage,
+      'source': 'patient_app',
+    };
+    final remote = this.remote;
+    if (remote is ApiRemoteDataSource) {
+      try {
+        await remote.postIntakeEvent(body);
+        return;
+      } catch (_) {
+        await outbox.enqueue(type: 'intake_event', payloadJson: jsonEncode(body));
+        return;
+      }
     }
   }
 }

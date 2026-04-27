@@ -2,15 +2,24 @@ from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import require_patient
+from app.models import IntakeEvent
 from app.models import Medication as MedRow
 from app.models import PatientProfile, User
-from app.schemas import InviteCodeOut, MedicationOut, MedicationUpsert, PatientProfileOut, PatientProfileUpdate
+from app.schemas import (
+    IntakeEventCreate,
+    IntakeEventOut,
+    InviteCodeOut,
+    MedicationOut,
+    MedicationUpsert,
+    PatientProfileOut,
+    PatientProfileUpdate,
+)
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
@@ -120,3 +129,47 @@ def delete_my_medication(
     db.add(row)
     db.commit()
     return None
+
+
+@router.post("/me/intake-events", response_model=IntakeEventOut, status_code=status.HTTP_201_CREATED)
+def create_my_intake_event(
+    body: IntakeEventCreate,
+    user: Annotated[User, Depends(require_patient)],
+    db: Session = Depends(get_db),
+) -> IntakeEvent:
+    med_id = body.medication_id
+    if med_id is not None:
+        med = db.get(MedRow, med_id)
+        if med is None or med.patient_user_id != user.id or med.deleted_at is not None:
+            med_id = None
+    row = IntakeEvent(
+        patient_user_id=user.id,
+        medication_id=med_id,
+        medication_name_snapshot=body.medication_name_snapshot,
+        dosage_snapshot=body.dosage_snapshot,
+        scheduled_at=body.scheduled_at,
+        recorded_at=body.recorded_at,
+        source=body.source,
+        status=body.status,
+        snooze_until=body.snooze_until,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+@router.get("/me/intake-events", response_model=list[IntakeEventOut])
+def list_my_intake_events(
+    user: Annotated[User, Depends(require_patient)],
+    db: Session = Depends(get_db),
+    from_: datetime | None = Query(None, alias="from"),
+    to_: datetime | None = Query(None, alias="to"),
+) -> list[IntakeEvent]:
+    stmt = select(IntakeEvent).where(IntakeEvent.patient_user_id == user.id).order_by(IntakeEvent.recorded_at.desc())
+    if from_ is not None:
+        stmt = stmt.where(IntakeEvent.recorded_at >= from_)
+    if to_ is not None:
+        stmt = stmt.where(IntakeEvent.recorded_at <= to_)
+    rows = db.scalars(stmt).all()
+    return list(rows)

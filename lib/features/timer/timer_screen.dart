@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../../app/theme/app_sizes.dart';
+import '../auth/auth_session.dart';
 import '../../app/theme/app_typography.dart';
 import '../../core/models/reminder_mode.dart';
 import '../medications/medications_controller.dart';
@@ -117,10 +119,22 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
     final outer = Theme.of(context);
     final theme = outer.copyWith(textTheme: AppTypography.timerScreenFrozen(outer.textTheme));
 
+    final auth = context.watch<AuthSession>();
+
     return Theme(
       data: theme,
       child: Scaffold(
-      appBar: AppBar(title: const Text('Таймер')),
+      appBar: AppBar(
+        title: const Text('Таймер'),
+        actions: [
+          if (auth.isAuthenticated)
+            IconButton(
+              icon: const Icon(Icons.history),
+              tooltip: 'История приёмов',
+              onPressed: () => context.push('/intake-history'),
+            ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppSizes.spaceM),
         children: [
