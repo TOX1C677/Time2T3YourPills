@@ -34,6 +34,13 @@ class AppServices {
     await remote.seedIfEmpty();
   }
 
+  /// Сброс локального кэша, привязанного к аккаунту (перед входом другого пользователя или после логина).
+  Future<void> clearUserBoundLocalCache() async {
+    await patient.clearLocal();
+    await medications.clearLocal();
+    await outbox.clear();
+  }
+
   /// Отправить outbox на API (если есть и разрешён вход), затем подтянуть препараты и профиль с сервера.
   Future<void> syncRemoteNow() async {
     final pending = await outbox.readAll();

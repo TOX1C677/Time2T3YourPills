@@ -47,6 +47,7 @@ class PatientProfile(Base):
 
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     first_name: Mapped[str] = mapped_column(String(200), default="")
+    last_name: Mapped[str] = mapped_column(String(200), default="")
     middle_name: Mapped[str] = mapped_column(String(200), default="")
     timezone: Mapped[str] = mapped_column(String(64), default="Europe/Moscow")
     link_token: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)

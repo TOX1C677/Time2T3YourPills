@@ -70,7 +70,7 @@ def send_missed_alert_emails(db: Session, alert_ids: list[UUID]) -> int:
         prof = db.get(PatientProfile, alert.patient_user_id)
         pname = (patient.display_name or "").strip()
         if not pname and prof is not None:
-            parts = [prof.first_name, prof.middle_name]
+            parts = [prof.first_name, prof.last_name, prof.middle_name]
             pname = " ".join(p for p in parts if p).strip() or patient.email
 
         caregivers = db.scalars(

@@ -39,9 +39,11 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)) -> TokenRespo
     db.add(user)
     db.flush()
     if body.role == UserRole.patient.value:
+        first = (body.display_name.strip() or email.split("@")[0])[:200]
         profile = PatientProfile(
             user_id=user.id,
-            first_name="",
+            first_name=first,
+            last_name="",
             middle_name="",
             timezone="Europe/Moscow",
             link_token=generate_link_token(),

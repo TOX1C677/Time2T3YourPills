@@ -13,6 +13,10 @@ class MedicationsRepository {
   final RemoteSyncDataSource _remote;
   final OutboxRepository _outbox;
 
+  Future<void> clearLocal() async {
+    await persistLocal(const []);
+  }
+
   Future<List<Medication>> loadLocal() async {
     final raw = await _store.read(StorageKeys.medicationsJson);
     return Medication.listFromJsonString(raw);

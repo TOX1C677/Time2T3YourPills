@@ -98,6 +98,7 @@ def list_patients(
                 patient_user_id=user.id,
                 display_name=user.display_name,
                 first_name=profile.first_name,
+                last_name=profile.last_name,
                 middle_name=profile.middle_name,
             )
         )
@@ -125,7 +126,7 @@ def list_missed_intake_alerts(
     for alert, patient_user, med, prof in rows:
         name = (patient_user.display_name or "").strip()
         if not name and prof is not None:
-            parts = [prof.first_name, prof.middle_name]
+            parts = [prof.first_name, prof.last_name, prof.middle_name]
             name = " ".join(p for p in parts if p).strip()
         out.append(
             MissedIntakeAlertOut(

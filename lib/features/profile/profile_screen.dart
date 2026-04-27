@@ -22,7 +22,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _name = TextEditingController();
-  final _middle = TextEditingController();
+  final _surname = TextEditingController();
 
   @override
   void initState() {
@@ -35,7 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       if (p != null) {
         _name.text = p.name;
-        _middle.text = p.middleName;
+        _surname.text = p.surname;
         setState(() {});
       }
     });
@@ -44,13 +44,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void dispose() {
     _name.dispose();
-    _middle.dispose();
+    _surname.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     final name = _name.text.trim();
-    final middle = _middle.text.trim();
+    final surname = _surname.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Имя не может быть пустым')),
@@ -58,7 +58,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
     await context.read<PatientController>().save(
-          PatientProfile(name: name, middleName: middle),
+          PatientProfile(name: name, surname: surname),
         );
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Сохранено')));
@@ -96,57 +96,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _showLinkPatientDialog() async {
-    final tokenCtrl = TextEditingController();
-    try {
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-        title: const Text('Добавить пациента'),
-        content: TextField(
-          controller: tokenCtrl,
-          decoration: const InputDecoration(
-            labelText: 'Код от пациента',
-            border: OutlineInputBorder(),
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
-          FilledButton(
-            onPressed: () async {
-              final auth = context.read<AuthSession>();
-              final cg = context.read<CaregiverScope>();
-              final app = context.read<AppServices>();
-              final meds = context.read<MedicationsController>();
-              final messenger = ScaffoldMessenger.of(context);
-              try {
-                await auth.linkPatientByToken(tokenCtrl.text);
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (!mounted) return;
-                await cg.refreshFromApi();
-                if (!mounted) return;
-                try {
-                  await app.syncRemoteNow();
-                } catch (_) {}
-                if (!mounted) return;
-                await meds.load();
-                messenger.showSnackBar(const SnackBar(content: Text('Пациент привязан')));
-              } on DioException catch (e) {
-                final d = e.response?.data;
-                final msg = d is Map ? '${d['detail'] ?? e.message}' : '${e.message}';
-                if (ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(msg)));
-                }
-              }
-            },
-            child: const Text('Привязать'),
-          ),
-        ],
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => _LinkPatientByCodeDialog(
+        parentContext: context,
       ),
     );
-    } finally {
-      tokenCtrl.dispose();
-    }
   }
 
   @override
@@ -164,10 +119,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: const Icon(Icons.more_vert),
             tooltip: 'Ещё',
             onSelected: (value) async {
-              if (value == 'history') {
-                if (!mounted) return;
-                context.push('/intake-history');
-              }
               if (value == 'alerts') {
                 if (!mounted) return;
                 context.push('/caregiver-alerts');
@@ -178,10 +129,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }
               if (value == 'logout') {
                 final router = GoRouter.of(context);
-                final auth = context.read<AuthSession>();
+                final authS = context.read<AuthSession>();
                 final cg = context.read<CaregiverScope>();
-                await auth.logout();
+                final app = context.read<AppServices>();
+                await authS.logout();
                 cg.clear();
+                await app.clearUserBoundLocalCache();
                 if (!mounted) return;
                 router.go('/login');
               }
@@ -189,7 +142,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             itemBuilder: (context) => [
               if (auth.role == 'caregiver')
                 const PopupMenuItem(value: 'alerts', child: Text('Пропуски приёмов')),
-              const PopupMenuItem(value: 'history', child: Text('История приёмов')),
               const PopupMenuItem(value: 'about', child: Text('О приложении')),
               const PopupMenuItem(value: 'logout', child: Text('Выйти')),
             ],
@@ -229,13 +181,83 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: AppSizes.spaceM),
           TextField(
-            controller: _middle,
-            decoration: const InputDecoration(labelText: 'Отчество / второе имя', border: OutlineInputBorder()),
+            controller: _surname,
+            decoration: const InputDecoration(
+              labelText: 'Фамилия (необязательно)',
+              border: OutlineInputBorder(),
+            ),
           ),
           const SizedBox(height: AppSizes.spaceXl),
           FilledButton(onPressed: _save, child: const Text('Сохранить')),
         ],
       ),
+    );
+  }
+}
+
+/// Диалог со своим [TextEditingController], чтобы не dispose до закрытия маршрута.
+class _LinkPatientByCodeDialog extends StatefulWidget {
+  const _LinkPatientByCodeDialog({required this.parentContext});
+
+  final BuildContext parentContext;
+
+  @override
+  State<_LinkPatientByCodeDialog> createState() => _LinkPatientByCodeDialogState();
+}
+
+class _LinkPatientByCodeDialogState extends State<_LinkPatientByCodeDialog> {
+  final _token = TextEditingController();
+
+  @override
+  void dispose() {
+    _token.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Добавить пациента'),
+      content: TextField(
+        controller: _token,
+        decoration: const InputDecoration(
+          labelText: 'Код от пациента',
+          border: OutlineInputBorder(),
+        ),
+        autofocus: true,
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
+        FilledButton(
+          onPressed: () async {
+            final auth = widget.parentContext.read<AuthSession>();
+            final cg = widget.parentContext.read<CaregiverScope>();
+            final app = widget.parentContext.read<AppServices>();
+            final meds = widget.parentContext.read<MedicationsController>();
+            final messenger = ScaffoldMessenger.of(widget.parentContext);
+            try {
+              await auth.linkPatientByToken(_token.text);
+              if (context.mounted) Navigator.pop(context);
+              if (!widget.parentContext.mounted) return;
+              await cg.refreshFromApi();
+              if (!widget.parentContext.mounted) return;
+              try {
+                await app.syncRemoteNow();
+              } catch (_) {}
+              if (!widget.parentContext.mounted) return;
+              await meds.load();
+              messenger.showSnackBar(const SnackBar(content: Text('Пациент привязан')));
+            } on DioException catch (e) {
+              final d = e.response?.data;
+              final msg = d is Map ? '${d['detail'] ?? e.message}' : '${e.message}';
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+              }
+            }
+          },
+          child: const Text('Привязать'),
+        ),
+      ],
     );
   }
 }

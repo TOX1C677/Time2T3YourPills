@@ -34,6 +34,7 @@ class PatientProfileOut(BaseModel):
 
     user_id: UUID
     first_name: str
+    last_name: str
     middle_name: str
     timezone: str
     updated_at: datetime | None = None
@@ -41,6 +42,7 @@ class PatientProfileOut(BaseModel):
 
 class PatientProfileUpdate(BaseModel):
     first_name: str | None = Field(default=None, max_length=200)
+    last_name: str | None = Field(default=None, max_length=200)
     middle_name: str | None = Field(default=None, max_length=200)
     timezone: str | None = Field(default=None, max_length=64)
 
@@ -57,6 +59,7 @@ class CaregiverPatientOut(BaseModel):
     patient_user_id: UUID
     display_name: str
     first_name: str
+    last_name: str
     middle_name: str
 
 

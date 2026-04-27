@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../app/config/app_env.dart';
 import '../../app/services/app_services.dart';
 import '../../app/theme/app_sizes.dart';
 import '../caregiver/caregiver_scope.dart';
@@ -46,6 +45,8 @@ class _LoginScreenState extends State<LoginScreen> {
             password: _password.text,
           );
       if (!mounted) return;
+      await app.clearUserBoundLocalCache();
+      if (!mounted) return;
       await caregiver.refreshFromApi();
       if (!mounted) return;
       try {
@@ -78,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.all(AppSizes.spaceM),
         children: [
           Text(
-            'Войдите под учётной записью. API: ${AppEnv.apiBaseUrl}',
+            'Войдите под учётной записью.',
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: AppSizes.spaceL),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 import 'app_sizes.dart';
@@ -17,7 +16,7 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: AppColors.lightScreenBg,
       textTheme: AppTypography.textTheme(scheme, Brightness.light, boldFonts: boldFonts),
       appBarTheme: AppBarTheme(
-        titleTextStyle: GoogleFonts.atkinsonHyperlegible(
+        titleTextStyle: TextStyle(
           fontSize: 32,
           fontWeight: titleW,
           color: scheme.onSurface,
@@ -75,7 +74,7 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: AppColors.darkScreenBg,
       textTheme: AppTypography.textTheme(scheme, Brightness.dark, boldFonts: boldFonts),
       appBarTheme: AppBarTheme(
-        titleTextStyle: GoogleFonts.atkinsonHyperlegible(
+        titleTextStyle: TextStyle(
           fontSize: 32,
           fontWeight: titleW,
           color: scheme.onSurface,

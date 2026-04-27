@@ -25,7 +25,7 @@ class PatientRepository {
   Future<void> upsertLocalEnqueue(PatientProfile profile) async {
     final stamped = PatientProfile(
       name: profile.name,
-      middleName: profile.middleName,
+      surname: profile.surname,
       updatedAt: DateTime.now(),
     );
     await persistLocal(stamped);
@@ -33,6 +33,10 @@ class PatientRepository {
       type: 'patient_upsert',
       payloadJson: jsonEncode(stamped.toJson()),
     );
+  }
+
+  Future<void> clearLocal() async {
+    await _store.remove(StorageKeys.patientProfileJson);
   }
 
   Future<PatientProfile?> pullPreferLocal() async {

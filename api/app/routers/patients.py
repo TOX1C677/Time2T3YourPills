@@ -64,6 +64,8 @@ def patch_my_profile(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Patient profile missing")
     if body.first_name is not None:
         profile.first_name = body.first_name
+    if body.last_name is not None:
+        profile.last_name = body.last_name
     if body.middle_name is not None:
         profile.middle_name = body.middle_name
     if body.timezone is not None:

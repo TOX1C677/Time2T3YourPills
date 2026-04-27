@@ -66,7 +66,7 @@ class ApiRemoteDataSource implements RemoteSyncDataSource {
     final m = res.data!;
     return PatientProfile(
       name: m['first_name'] as String? ?? '',
-      middleName: m['middle_name'] as String? ?? '',
+      surname: m['last_name'] as String? ?? '',
       updatedAt: m['updated_at'] != null ? DateTime.tryParse(m['updated_at'] as String) : null,
     );
   }
@@ -114,7 +114,8 @@ class ApiRemoteDataSource implements RemoteSyncDataSource {
       '/v1/patients/me/profile',
       data: {
         'first_name': map['name'] ?? '',
-        'middle_name': map['middleName'] ?? '',
+        'last_name': map['surname'] ?? '',
+        'middle_name': '',
       },
     );
   }

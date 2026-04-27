@@ -34,6 +34,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _submit() async {
+    if (_name.text.trim().isEmpty) {
+      setState(() => _error = 'Введите имя');
+      return;
+    }
     setState(() {
       _error = null;
       _loading = true;
@@ -49,6 +53,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             displayName: _name.text.trim(),
             role: _role,
           );
+      if (!mounted) return;
+      await app.clearUserBoundLocalCache();
       if (!mounted) return;
       await caregiver.refreshFromApi();
       if (!mounted) return;
@@ -81,11 +87,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppSizes.spaceM),
         children: [
-          Text(
-            'Выберите роль: пациент — таймер и свои таблетки; врач или родственник — управление таблетками привязанных пациентов.',
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: AppSizes.spaceL),
           if (_error != null) ...[
             Text(_error!, style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.error)),
             const SizedBox(height: AppSizes.spaceM),
@@ -110,7 +111,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SizedBox(height: AppSizes.spaceM),
           TextField(
             controller: _name,
-            decoration: const InputDecoration(labelText: 'Как вас называть', border: OutlineInputBorder()),
+            decoration: const InputDecoration(labelText: 'Имя', border: OutlineInputBorder()),
           ),
           const SizedBox(height: AppSizes.spaceM),
           TextField(
