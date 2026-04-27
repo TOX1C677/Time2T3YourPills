@@ -42,7 +42,7 @@ abstract final class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         height: 96,
         labelTextStyle: WidgetStateProperty.all(
-          TextStyle(fontSize: 24, fontWeight: navLabelW),
+          TextStyle(fontSize: 22, fontWeight: navLabelW),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -100,7 +100,7 @@ abstract final class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         height: 96,
         labelTextStyle: WidgetStateProperty.all(
-          TextStyle(fontSize: 24, fontWeight: navLabelW),
+          TextStyle(fontSize: 22, fontWeight: navLabelW),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(

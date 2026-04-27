@@ -9,6 +9,7 @@ import '../../core/errors/user_error_ru.dart';
 import '../caregiver/caregiver_scope.dart';
 import '../medications/medications_controller.dart';
 import '../profile/patient_controller.dart';
+import '../profile/ui_preferences_controller.dart';
 import 'auth_session.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -66,6 +67,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await meds.load();
       if (!mounted) return;
       await pat.load();
+      if (!mounted) return;
+      await context.read<UiPreferencesController>().load();
       if (!mounted) return;
       context.go('/timer');
     } on DioException catch (e) {

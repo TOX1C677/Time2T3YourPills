@@ -101,7 +101,7 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(
           create: (_) {
-            final c = UiPreferencesController(appServices.store);
+            final c = UiPreferencesController(appServices.store, auth);
             unawaited(c.load());
             return c;
           },

@@ -29,6 +29,20 @@ class TokenResponse(BaseModel):
     email: str
 
 
+class UserMeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    email: EmailStr
+    role: str
+    display_name: str
+    ui_bold_fonts: bool
+
+
+class UserSelfPatch(BaseModel):
+    ui_bold_fonts: bool | None = None
+
+
 class PatientProfileOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

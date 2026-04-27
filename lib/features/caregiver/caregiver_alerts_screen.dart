@@ -104,8 +104,7 @@ class _CaregiverAlertsScreenState extends State<CaregiverAlertsScreen> {
                 : _items.isEmpty
                     ? Center(
                         child: Text(
-                          'Пока нет зафиксированных пропусков.\n'
-                          'На сервере должен периодически запускаться сканер (см. docs/DEPLOY.md).',
+                          'Пока нет зафиксированных пропусков.',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodyLarge,
                         ),

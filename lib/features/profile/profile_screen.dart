@@ -169,14 +169,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: AppSizes.spaceM),
           ],
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text('Сделать весь шрифт жирным', style: theme.textTheme.titleSmall),
-            subtitle: Text('Крупнее начертание по всему приложению', style: theme.textTheme.bodyMedium),
-            value: uiPrefs.boldFonts,
-            onChanged: (v) => uiPrefs.setBoldFonts(v),
-          ),
-          const SizedBox(height: AppSizes.spaceL),
           TextField(
             controller: _name,
             decoration: const InputDecoration(labelText: 'Имя', border: OutlineInputBorder()),
@@ -191,6 +183,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: AppSizes.spaceXl),
           FilledButton(onPressed: _save, child: const Text('Сохранить')),
+          const SizedBox(height: AppSizes.spaceXl),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text('Сделать весь шрифт жирным', style: theme.textTheme.titleSmall),
+            subtitle: Text('Крупнее начертание по всему приложению', style: theme.textTheme.bodyMedium),
+            value: uiPrefs.boldFonts,
+            onChanged: (v) async {
+              final ok = await uiPrefs.setBoldFonts(v);
+              if (!context.mounted || ok) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Не удалось сохранить настройку. Проверьте сеть.'),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );

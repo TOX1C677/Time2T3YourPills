@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.database import Base, engine
-from app.routers import auth, caregiver, health, patients, system
+from app.routers import auth, caregiver, health, patients, system, users
 
 
 @asynccontextmanager
@@ -20,6 +20,7 @@ app = FastAPI(title="Time2T3 API", version="1.0.0", lifespan=lifespan)
 
 app.include_router(health.router)
 app.include_router(auth.router, prefix="/v1")
+app.include_router(users.router, prefix="/v1")
 app.include_router(patients.router, prefix="/v1")
 app.include_router(caregiver.router, prefix="/v1")
 app.include_router(system.router, prefix="/v1")
