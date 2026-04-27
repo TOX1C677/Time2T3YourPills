@@ -24,6 +24,7 @@ jobs:
         run: pip install -r requirements.txt
       - name: Alembic migration (SQLite smoke)
         run: |
+          mkdir -p data
           rm -f data/ci_alembic.db
           DATABASE_URL=sqlite:///./data/ci_alembic.db alembic upgrade head
       - name: Run tests
