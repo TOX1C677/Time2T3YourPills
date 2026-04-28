@@ -41,6 +41,41 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
 
   DateTime get _draftAsDateTime => DateTime(2024, 1, 1, _draftTime.hour, _draftTime.minute);
 
+  DateTime get _firstIntakeAsDateTime => DateTime(2024, 1, 1, _firstIntakeTime.hour, _firstIntakeTime.minute);
+
+  /// Колесо времени как у графика приёма (Cupertino).
+  Widget _buildCupertinoTimePicker({
+    Key? key,
+    required ThemeData theme,
+    required AppScreenLayout layout,
+    required DateTime initialDateTime,
+    required ValueChanged<DateTime> onChanged,
+  }) {
+    return SizedBox(
+      key: key,
+      height: 300,
+      child: CupertinoTheme(
+        data: CupertinoThemeData(
+          brightness: theme.brightness,
+          textTheme: CupertinoTextThemeData(
+            dateTimePickerTextStyle: GoogleFonts.notoSans(
+              color: theme.colorScheme.onSurface,
+              fontSize: layout.shortestSide * 0.0872,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        child: CupertinoDatePicker(
+          mode: CupertinoDatePickerMode.time,
+          use24hFormat: true,
+          itemExtent: 52,
+          initialDateTime: initialDateTime,
+          onDateTimeChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
   static String _formatHm(TimeOfDay t) {
     final h = t.hour.toString().padLeft(2, '0');
     final m = t.minute.toString().padLeft(2, '0');
@@ -112,14 +147,6 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
 
     await context.read<MedicationsController>().upsert(med);
     if (mounted) context.pop();
-  }
-
-  Future<void> _pickFirstIntakeTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _firstIntakeTime,
-    );
-    if (picked != null) setState(() => _firstIntakeTime = picked);
   }
 
   void _setReminderMode(ReminderMode next) {
@@ -258,16 +285,17 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
             modeIconSlotW: modeIconSlotW,
           ),
           SizedBox(height: layout.spaceM),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.schedule),
-            title: const Text('Время первого приёма'),
-            subtitle: Text(
-              'Сейчас: ${_formatHm(_firstIntakeTime)} · для интервала — отсчёт от этой отметки дня; для графика — не раньше этого момента при выборе слотов.',
-              style: theme.textTheme.bodySmall,
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: _pickFirstIntakeTime,
+          Text('Время первого приёма', style: theme.textTheme.titleSmall),
+          SizedBox(height: layout.spaceS),
+          _buildCupertinoTimePicker(
+            theme: theme,
+            layout: layout,
+            initialDateTime: _firstIntakeAsDateTime,
+            onChanged: (d) {
+              setState(() {
+                _firstIntakeTime = TimeOfDay(hour: d.hour, minute: d.minute);
+              });
+            },
           ),
           SizedBox(height: layout.spaceL),
           TextField(
@@ -337,32 +365,16 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
             if (_showSchedulePicker) ...[
               Text('Выбор времени', style: theme.textTheme.titleSmall),
               SizedBox(height: layout.spaceS),
-              SizedBox(
+              _buildCupertinoTimePicker(
                 key: ValueKey<int>(_pickerSession),
-                height: 300,
-                child: CupertinoTheme(
-                  data: CupertinoThemeData(
-                    brightness: theme.brightness,
-                    textTheme: CupertinoTextThemeData(
-                      dateTimePickerTextStyle: GoogleFonts.notoSans(
-                        color: theme.colorScheme.onSurface,
-                        fontSize: layout.shortestSide * 0.0872,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  child: CupertinoDatePicker(
-                    mode: CupertinoDatePickerMode.time,
-                    use24hFormat: true,
-                    itemExtent: 52,
-                    initialDateTime: _draftAsDateTime,
-                    onDateTimeChanged: (d) {
-                      setState(() {
-                        _draftTime = TimeOfDay(hour: d.hour, minute: d.minute);
-                      });
-                    },
-                  ),
-                ),
+                theme: theme,
+                layout: layout,
+                initialDateTime: _draftAsDateTime,
+                onChanged: (d) {
+                  setState(() {
+                    _draftTime = TimeOfDay(hour: d.hour, minute: d.minute);
+                  });
+                },
               ),
               SizedBox(height: layout.spaceM),
               if (_scheduleTimes.isNotEmpty)

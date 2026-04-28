@@ -33,7 +33,7 @@ class MedicationsScreen extends StatelessWidget {
         centerTitle: false,
         title: showPatientPicker
             ? Padding(
-                padding: EdgeInsets.only(right: layout.spaceS),
+                padding: EdgeInsetsDirectional.only(start: layout.spaceM, end: layout.spaceS),
                 child: DropdownButton<String>(
                   isExpanded: true,
                   underline: const SizedBox.shrink(),
@@ -134,7 +134,77 @@ class MedicationsScreen extends StatelessWidget {
                     ),
                     confirmDismiss: (direction) async {
                       if (direction != DismissDirection.endToStart) return false;
-                      return true;
+                      final ok = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) {
+                          final scheme = Theme.of(ctx).colorScheme;
+                          final dialogTheme = Theme.of(ctx).textTheme;
+                          return AlertDialog(
+                            // Чуть шире окно диалога → шире блоки кнопок (по умолчанию ~40 dp с каждой стороны).
+                            insetPadding: const EdgeInsets.symmetric(horizontal: 26, vertical: 24),
+                            title: Text(
+                              'Удалить препарат?',
+                              style: dialogTheme.titleLarge?.copyWith(
+                                fontSize: 31,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            content: Text(
+                              '«${m.name}» будет удалён из списка.',
+                              style: dialogTheme.bodyLarge?.copyWith(
+                                fontSize: 26,
+                                height: 1.62,
+                              ),
+                            ),
+                            actions: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: FilledButton(
+                                      onPressed: () => Navigator.pop(ctx, false),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: scheme.secondaryContainer,
+                                        foregroundColor: scheme.onSecondaryContainer,
+                                        padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 17),
+                                        minimumSize: const Size(0, 84),
+                                        textStyle: const TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                      ),
+                                      child: const Text('Отмена'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 20),
+                                  Expanded(
+                                    child: FilledButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: scheme.error,
+                                        foregroundColor: scheme.onError,
+                                        padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 17),
+                                        minimumSize: const Size(0, 84),
+                                        textStyle: const TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                      ),
+                                      child: const Text('Удалить'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                      return ok ?? false;
                     },
                     onDismissed: (_) async {
                       await context.read<MedicationsController>().removeById(m.id);

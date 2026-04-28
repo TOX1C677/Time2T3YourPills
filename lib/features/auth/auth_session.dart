@@ -163,13 +163,7 @@ class AuthSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> logout() async {
-    final rt = _refreshToken ?? await _storage.read(key: _kRefresh);
-    if (rt != null && rt.isNotEmpty) {
-      try {
-        await _dio.post<void>('/v1/auth/logout', data: {'refresh_token': rt});
-      } catch (_) {}
-    }
+  Future<void> _clearLocalAuth() async {
     _accessToken = null;
     _refreshToken = null;
     _role = null;
@@ -179,6 +173,22 @@ class AuthSession extends ChangeNotifier {
     await _storage.delete(key: _kRole);
     await _storage.delete(key: _kEmail);
     notifyListeners();
+  }
+
+  Future<void> logout() async {
+    final rt = _refreshToken ?? await _storage.read(key: _kRefresh);
+    if (rt != null && rt.isNotEmpty) {
+      try {
+        await _dio.post<void>('/v1/auth/logout', data: {'refresh_token': rt});
+      } catch (_) {}
+    }
+    await _clearLocalAuth();
+  }
+
+  /// Безвозвратное удаление аккаунта на сервере и очистка локальных токенов.
+  Future<void> deleteAccount() async {
+    await _dio.delete<void>('/v1/users/me');
+    await _clearLocalAuth();
   }
 
   Future<String> fetchInviteCode() async {

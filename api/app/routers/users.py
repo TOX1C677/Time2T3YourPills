@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -28,3 +28,17 @@ def patch_me(
     db.commit()
     db.refresh(user)
     return user
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_me(
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> None:
+    """Безвозвратное удаление аккаунта.
+
+    Связанные строки (профиль пациента, привязки опекун-пациент, препараты, события приёмов,
+    пропуски) удаляются каскадом по внешним ключам в БД.
+    """
+    db.delete(user)
+    db.commit()

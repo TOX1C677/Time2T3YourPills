@@ -109,6 +109,171 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<bool> _confirmLogout() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final scheme = Theme.of(ctx).colorScheme;
+        final dialogTheme = Theme.of(ctx).textTheme;
+        return AlertDialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 26, vertical: 24),
+          title: Text(
+            'Выйти из аккаунта?',
+            style: dialogTheme.titleLarge?.copyWith(
+              fontSize: 31,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Text(
+            'Потребуется снова войти по почте и паролю.',
+            style: dialogTheme.bodyLarge?.copyWith(
+              fontSize: 26,
+              height: 1.62,
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: scheme.secondaryContainer,
+                      foregroundColor: scheme.onSecondaryContainer,
+                      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 17),
+                      minimumSize: const Size(0, 84),
+                      textStyle: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: const Text('Отмена'),
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: scheme.error,
+                      foregroundColor: scheme.onError,
+                      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 17),
+                      minimumSize: const Size(0, 84),
+                      textStyle: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: const Text('Выйти'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+    return ok ?? false;
+  }
+
+  Future<bool> _confirmDeleteAccount() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final scheme = Theme.of(ctx).colorScheme;
+        final dialogTheme = Theme.of(ctx).textTheme;
+        return AlertDialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 26, vertical: 24),
+          title: Text(
+            'Удалить аккаунт?',
+            style: dialogTheme.titleLarge?.copyWith(
+              fontSize: 31,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Text(
+            'Профиль, приёмы и привязки будут удалены без восстановления.',
+            style: dialogTheme.bodyLarge?.copyWith(
+              fontSize: 26,
+              height: 1.62,
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: scheme.secondaryContainer,
+                      foregroundColor: scheme.onSecondaryContainer,
+                      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 17),
+                      minimumSize: const Size(0, 84),
+                      textStyle: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: const Text('Отмена'),
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: scheme.error,
+                      foregroundColor: scheme.onError,
+                      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 17),
+                      minimumSize: const Size(0, 84),
+                      textStyle: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: const Text('Удалить'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+    return ok ?? false;
+  }
+
+  Future<void> _deleteAccount() async {
+    if (!await _confirmDeleteAccount()) return;
+    if (!mounted) return;
+    try {
+      await context.read<AuthSession>().deleteAccount();
+      if (!mounted) return;
+      context.read<CaregiverScope>().clear();
+      await context.read<AppServices>().clearUserBoundLocalCache();
+      if (!mounted) return;
+      GoRouter.of(context).go('/login');
+    } on DioException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(dioErrorRu(e))));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userErrorRu(e))));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     context.watch<PatientController>();
@@ -117,9 +282,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final theme = Theme.of(context);
     final layout = context.layout;
 
+    final appBarTitleStyle = theme.appBarTheme.titleTextStyle ?? theme.textTheme.titleLarge;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(auth.role == 'caregiver' ? 'Профиль опекуна' : 'Профиль пациента'),
+        title: Text(
+          auth.role == 'caregiver' ? 'Профиль опекуна' : 'Профиль пациента',
+          style: auth.role == 'caregiver'
+              ? appBarTitleStyle
+              : appBarTitleStyle?.copyWith(
+                  fontSize: (appBarTitleStyle.fontSize ?? 22) * 0.8,
+                ),
+        ),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -134,10 +308,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 context.push('/about');
               }
               if (value == 'logout') {
+                if (!mounted) return;
                 final router = GoRouter.of(context);
                 final authS = context.read<AuthSession>();
                 final cg = context.read<CaregiverScope>();
                 final app = context.read<AppServices>();
+                if (!await _confirmLogout()) return;
+                if (!mounted) return;
                 await authS.logout();
                 cg.clear();
                 await app.clearUserBoundLocalCache();
@@ -203,6 +380,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               );
             },
+          ),
+          SizedBox(height: layout.spaceXl * 2),
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+          SizedBox(height: layout.spaceM),
+          OutlinedButton(
+            onPressed: auth.isAuthenticated ? _deleteAccount : null,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+              side: BorderSide(color: theme.colorScheme.error),
+              minimumSize: Size(double.infinity, layout.primaryButtonHeight * 0.55),
+            ),
+            child: Text('Удалить аккаунт', style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.error)),
           ),
         ],
       ),
