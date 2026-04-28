@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../app/theme/app_screen_layout.dart';
+import '../../app/widgets/destructive_confirm_dialog.dart';
 import '../../core/models/reminder_mode.dart';
 import '../auth/auth_session.dart';
 import '../caregiver/caregiver_scope.dart';
@@ -134,77 +135,12 @@ class MedicationsScreen extends StatelessWidget {
                     ),
                     confirmDismiss: (direction) async {
                       if (direction != DismissDirection.endToStart) return false;
-                      final ok = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) {
-                          final scheme = Theme.of(ctx).colorScheme;
-                          final dialogTheme = Theme.of(ctx).textTheme;
-                          return AlertDialog(
-                            // Чуть шире окно диалога → шире блоки кнопок (по умолчанию ~40 dp с каждой стороны).
-                            insetPadding: const EdgeInsets.symmetric(horizontal: 26, vertical: 24),
-                            title: Text(
-                              'Удалить препарат?',
-                              style: dialogTheme.titleLarge?.copyWith(
-                                fontSize: 31,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            content: Text(
-                              '«${m.name}» будет удалён из списка.',
-                              style: dialogTheme.bodyLarge?.copyWith(
-                                fontSize: 26,
-                                height: 1.62,
-                              ),
-                            ),
-                            actions: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: FilledButton(
-                                      onPressed: () => Navigator.pop(ctx, false),
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: scheme.secondaryContainer,
-                                        foregroundColor: scheme.onSecondaryContainer,
-                                        padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 17),
-                                        minimumSize: const Size(0, 84),
-                                        textStyle: const TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                      ),
-                                      child: const Text('Отмена'),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 20),
-                                  Expanded(
-                                    child: FilledButton(
-                                      onPressed: () => Navigator.pop(ctx, true),
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: scheme.error,
-                                        foregroundColor: scheme.onError,
-                                        padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 17),
-                                        minimumSize: const Size(0, 84),
-                                        textStyle: const TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                      ),
-                                      child: const Text('Удалить'),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          );
-                        },
+                      return showDestructiveConfirmDialog(
+                        context,
+                        title: 'Удалить препарат?',
+                        body: '«${m.name}» будет удалён из списка.',
+                        confirmLabel: 'Удалить',
                       );
-                      return ok ?? false;
                     },
                     onDismissed: (_) async {
                       await context.read<MedicationsController>().removeById(m.id);

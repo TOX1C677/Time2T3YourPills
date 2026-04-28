@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../app/services/app_services.dart';
 import '../../app/theme/app_screen_layout.dart';
+import '../../app/widgets/destructive_confirm_dialog.dart';
 import '../../core/errors/user_error_ru.dart';
 import '../auth/auth_session.dart';
 import '../caregiver/caregiver_scope.dart';
@@ -109,150 +110,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<bool> _confirmLogout() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        final scheme = Theme.of(ctx).colorScheme;
-        final dialogTheme = Theme.of(ctx).textTheme;
-        return AlertDialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 26, vertical: 24),
-          title: Text(
-            'Выйти из аккаунта?',
-            style: dialogTheme.titleLarge?.copyWith(
-              fontSize: 31,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: Text(
-            'Потребуется снова войти по почте и паролю.',
-            style: dialogTheme.bodyLarge?.copyWith(
-              fontSize: 26,
-              height: 1.62,
-            ),
-          ),
-          actions: [
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: scheme.secondaryContainer,
-                      foregroundColor: scheme.onSecondaryContainer,
-                      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 17),
-                      minimumSize: const Size(0, 84),
-                      textStyle: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: const Text('Отмена'),
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: scheme.error,
-                      foregroundColor: scheme.onError,
-                      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 17),
-                      minimumSize: const Size(0, 84),
-                      textStyle: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: const Text('Выйти'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
+  Future<bool> _confirmLogout() {
+    return showDestructiveConfirmDialog(
+      context,
+      title: 'Выйти из аккаунта?',
+      body: 'Потребуется снова войти по почте и паролю.',
+      confirmLabel: 'Выйти',
     );
-    return ok ?? false;
   }
 
-  Future<bool> _confirmDeleteAccount() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        final scheme = Theme.of(ctx).colorScheme;
-        final dialogTheme = Theme.of(ctx).textTheme;
-        return AlertDialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 26, vertical: 24),
-          title: Text(
-            'Удалить аккаунт?',
-            style: dialogTheme.titleLarge?.copyWith(
-              fontSize: 31,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: Text(
-            'Профиль, приёмы и привязки будут удалены без восстановления.',
-            style: dialogTheme.bodyLarge?.copyWith(
-              fontSize: 26,
-              height: 1.62,
-            ),
-          ),
-          actions: [
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: scheme.secondaryContainer,
-                      foregroundColor: scheme.onSecondaryContainer,
-                      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 17),
-                      minimumSize: const Size(0, 84),
-                      textStyle: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: const Text('Отмена'),
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: scheme.error,
-                      foregroundColor: scheme.onError,
-                      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 17),
-                      minimumSize: const Size(0, 84),
-                      textStyle: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: const Text('Удалить'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
+  Future<bool> _confirmDeleteAccount() {
+    return showDestructiveConfirmDialog(
+      context,
+      title: 'Удалить аккаунт?',
+      body: 'Профиль, приёмы и привязки будут удалены без восстановления.',
+      confirmLabel: 'Удалить',
     );
-    return ok ?? false;
   }
 
   Future<void> _deleteAccount() async {
@@ -369,7 +242,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text('Сделать весь шрифт жирным', style: theme.textTheme.titleSmall),
-            subtitle: Text('Крупнее начертание по всему приложению', style: theme.textTheme.bodyMedium),
             value: uiPrefs.boldFonts,
             onChanged: (v) async {
               final ok = await uiPrefs.setBoldFonts(v);

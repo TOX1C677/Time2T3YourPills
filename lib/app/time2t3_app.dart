@@ -17,6 +17,7 @@ class Time2T3App extends StatelessWidget {
     final bold = context.watch<UiPreferencesController>().boldFonts;
     final refLayout = AppScreenLayout.reference();
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       locale: const Locale('ru'),
       supportedLocales: const [Locale('ru')],
       localizationsDelegates: const [
