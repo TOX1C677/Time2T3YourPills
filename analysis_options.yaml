@@ -9,6 +9,12 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+# `unused_shown_name` is an analyzer diagnostic, not a linter rule — do not put
+# it under `linter.rules` (that triggers undefined_lint). Tune severity here:
+analyzer:
+  errors:
+    unused_shown_name: warning
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

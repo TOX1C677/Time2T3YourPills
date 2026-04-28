@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../app/services/app_services.dart';
-import '../../app/theme/app_sizes.dart';
+import '../../app/theme/app_screen_layout.dart';
 import '../../core/errors/user_error_ru.dart';
 import '../caregiver/caregiver_scope.dart';
 import '../medications/medications_controller.dart';
@@ -74,19 +74,20 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final layout = context.layout;
     return Scaffold(
       appBar: AppBar(title: const Text('Вход')),
       body: ListView(
-        padding: const EdgeInsets.all(AppSizes.spaceM),
+        padding: EdgeInsets.all(layout.spaceM),
         children: [
           Text(
             'Войдите под учётной записью.',
             style: theme.textTheme.bodyMedium,
           ),
-          const SizedBox(height: AppSizes.spaceL),
+          SizedBox(height: layout.spaceL),
           if (_error != null) ...[
             Text(_error!, style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.error)),
-            const SizedBox(height: AppSizes.spaceM),
+            SizedBox(height: layout.spaceM),
           ],
           TextField(
             controller: _email,
@@ -94,18 +95,24 @@ class _LoginScreenState extends State<LoginScreen> {
             autocorrect: false,
             decoration: const InputDecoration(labelText: 'Эл. почта', border: OutlineInputBorder()),
           ),
-          const SizedBox(height: AppSizes.spaceM),
+          SizedBox(height: layout.spaceM),
           TextField(
             controller: _password,
             obscureText: true,
             decoration: const InputDecoration(labelText: 'Пароль', border: OutlineInputBorder()),
           ),
-          const SizedBox(height: AppSizes.spaceXl),
+          SizedBox(height: layout.spaceXl),
           FilledButton(
             onPressed: _loading ? null : _submit,
-            child: _loading ? const SizedBox(height: 28, width: 28, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Войти'),
+            child: _loading
+                ? SizedBox(
+                    height: layout.shortestSide * 0.072,
+                    width: layout.shortestSide * 0.072,
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Войти'),
           ),
-          const SizedBox(height: AppSizes.spaceM),
+          SizedBox(height: layout.spaceM),
           OutlinedButton(
             onPressed: _loading ? null : () => context.push('/register'),
             child: const Text('Регистрация'),

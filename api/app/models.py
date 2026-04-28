@@ -79,6 +79,7 @@ class Medication(Base):
     reminder_mode: Mapped[str] = mapped_column(String(32), nullable=False)
     interval_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     slot_times: Mapped[list | None] = mapped_column(_json_type(), nullable=True)
+    first_intake_time: Mapped[str | None] = mapped_column(String(8), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

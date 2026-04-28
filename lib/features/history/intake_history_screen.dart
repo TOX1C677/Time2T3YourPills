@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../app/theme/app_sizes.dart';
+import '../../app/theme/app_screen_layout.dart';
 import '../../core/errors/user_error_ru.dart';
 import '../../core/models/intake_history_item.dart';
 import '../auth/auth_session.dart';
@@ -107,8 +107,94 @@ class _IntakeHistoryScreenState extends State<IntakeHistoryScreen> {
     return '${two(d.day)}.${two(d.month)}.${d.year} ${two(d.hour)}:${two(d.minute)}';
   }
 
+  void _setFilterMode(int next) {
+    if (_filterMode == next) return;
+    setState(() => _filterMode = next);
+    _load();
+  }
+
+  /// Три равные колонки + [FittedBox], без переноса «7 дней» / «30 дней» ([SegmentedButton] на узком экране ломает строки).
+  Widget _buildRangePicker({
+    required ThemeData theme,
+    required AppScreenLayout layout,
+    required TextStyle segmentStyle,
+    required double iconSize,
+    required double segmentPaddingH,
+    required double segmentPaddingV,
+    required double iconSlotW,
+  }) {
+    final scheme = theme.colorScheme;
+    final r = layout.cardRadius;
+
+    Widget cell(int value, String label, IconData iconIdle) {
+      final selected = _filterMode == value;
+      final fg = selected ? scheme.onSecondaryContainer : scheme.onSurface;
+      return Material(
+        color: selected ? scheme.secondaryContainer : scheme.surface,
+        child: InkWell(
+          onTap: () => _setFilterMode(value),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: segmentPaddingH, vertical: segmentPaddingV),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: iconSlotW,
+                  child: Center(
+                    child: Icon(
+                      selected ? Icons.check : iconIdle,
+                      size: iconSize,
+                      color: fg,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        style: segmentStyle.copyWith(color: fg),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Semantics(
+      label: 'Период истории',
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(r),
+          border: Border.all(color: scheme.outline),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: cell(0, '7 дней', Icons.view_week_outlined)),
+              VerticalDivider(width: 1, thickness: 1, color: scheme.outline),
+              Expanded(child: cell(1, '30 дней', Icons.calendar_view_month_outlined)),
+              VerticalDivider(width: 1, thickness: 1, color: scheme.outline),
+              Expanded(child: cell(2, 'Всё', Icons.filter_list_outlined)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final layout = context.layout;
     final auth = context.watch<AuthSession>();
     final cg = context.watch<CaregiverScope>();
     final theme = Theme.of(context);
@@ -128,6 +214,25 @@ class _IntakeHistoryScreenState extends State<IntakeHistoryScreen> {
       subtitle = 'Ваши подтверждённые приёмы с телефона';
     }
 
+    final layoutW = layout.screenWidth;
+    const rangeLabelFraction = 0.054;
+    const rangeIconFraction = 0.062;
+    final rangeLabelPx = layoutW * rangeLabelFraction;
+    final segmentBase = theme.textTheme.labelLarge ?? theme.textTheme.bodyMedium ?? const TextStyle();
+    final rangeSegmentStyle = segmentBase.copyWith(
+      fontSize: rangeLabelPx,
+      height: 1.12,
+      fontWeight: FontWeight.w500,
+    );
+    final rangeIconSize = layoutW * rangeIconFraction;
+    final segmentPaddingH = layoutW * 0.012;
+    final segmentPaddingV = layoutW * 0.032;
+    final minIconSlotW = rangeIconSize + 4;
+    final maxIconSlotW = layoutW * 0.075;
+    // На узком экране min > max ломает [num.clamp] → «Invalid argument(s)».
+    final iconSlotUpper = maxIconSlotW >= minIconSlotW ? maxIconSlotW : minIconSlotW;
+    final iconSlotW = (rangeIconSize * 1.22).clamp(minIconSlotW, iconSlotUpper);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('История приёмов'),
@@ -139,28 +244,31 @@ class _IntakeHistoryScreenState extends State<IntakeHistoryScreen> {
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
-          padding: const EdgeInsets.all(AppSizes.spaceM),
+          padding: EdgeInsets.all(layout.spaceM),
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
           Text(subtitle, style: theme.textTheme.bodyMedium),
-          const SizedBox(height: AppSizes.spaceM),
-          SegmentedButton<int>(
-            segments: const [
-              ButtonSegment<int>(value: 0, label: Text('7 дней')),
-              ButtonSegment<int>(value: 1, label: Text('30 дней')),
-              ButtonSegment<int>(value: 2, label: Text('Всё')),
-            ],
-            selected: {_filterMode},
-            onSelectionChanged: (s) {
-              setState(() => _filterMode = s.first);
-              _load();
-            },
+          SizedBox(height: layout.spaceM),
+          _buildRangePicker(
+            theme: theme,
+            layout: layout,
+            segmentStyle: rangeSegmentStyle,
+            iconSize: rangeIconSize,
+            segmentPaddingH: segmentPaddingH,
+            segmentPaddingV: segmentPaddingV,
+            iconSlotW: iconSlotW,
           ),
-          const SizedBox(height: AppSizes.spaceL),
-          if (_loading) const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
+          SizedBox(height: layout.spaceL),
+          if (_loading)
+            Center(
+              child: Padding(
+                padding: EdgeInsets.all(layout.shortestSide * 0.082),
+                child: const CircularProgressIndicator(),
+              ),
+            ),
           if (_error != null) ...[
             Text(_error!, style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.error)),
-            const SizedBox(height: AppSizes.spaceM),
+            SizedBox(height: layout.spaceM),
             FilledButton.tonal(onPressed: _load, child: const Text('Повторить')),
           ],
           if (!_loading && _error == null && _items.isEmpty)
@@ -173,7 +281,7 @@ class _IntakeHistoryScreenState extends State<IntakeHistoryScreen> {
           if (!_loading && _error == null && _items.isNotEmpty)
             ..._items.map(
               (e) => Card(
-                margin: const EdgeInsets.only(bottom: AppSizes.spaceS),
+                margin: EdgeInsets.only(bottom: layout.spaceS),
                 child: ListTile(
                   title: Text(e.medicationNameSnapshot.isNotEmpty ? e.medicationNameSnapshot : 'Препарат', style: theme.textTheme.titleMedium),
                   subtitle: Text(

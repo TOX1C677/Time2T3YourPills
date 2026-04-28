@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../app/services/app_services.dart';
-import '../../app/theme/app_sizes.dart';
+import '../../app/theme/app_screen_layout.dart';
 import '../../core/errors/user_error_ru.dart';
 import '../auth/auth_session.dart';
 import '../caregiver/caregiver_scope.dart';
@@ -13,6 +13,9 @@ import '../medications/medications_controller.dart';
 import '../../core/models/patient_profile.dart';
 import 'patient_controller.dart';
 import 'ui_preferences_controller.dart';
+
+/// Временно скрыть пункт «О приложении» в меню (маршрут `/about` и экран не трогаем).
+const bool _kUiShowAboutMenuItem = false;
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -112,6 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final uiPrefs = context.watch<UiPreferencesController>();
     final auth = context.watch<AuthSession>();
     final theme = Theme.of(context);
+    final layout = context.layout;
 
     return Scaffold(
       appBar: AppBar(
@@ -125,7 +129,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (!mounted) return;
                 context.push('/caregiver-alerts');
               }
-              if (value == 'about') {
+              if (_kUiShowAboutMenuItem && value == 'about') {
                 if (!mounted) return;
                 context.push('/about');
               }
@@ -144,14 +148,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             itemBuilder: (context) => [
               if (auth.role == 'caregiver')
                 const PopupMenuItem(value: 'alerts', child: Text('Пропуски приёмов')),
-              const PopupMenuItem(value: 'about', child: Text('О приложении')),
+              if (_kUiShowAboutMenuItem)
+                const PopupMenuItem(value: 'about', child: Text('О приложении')),
               const PopupMenuItem(value: 'logout', child: Text('Выйти')),
             ],
           ),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppSizes.spaceM),
+        padding: EdgeInsets.all(layout.spaceM),
         children: [
           if (auth.isAuthenticated && auth.role == 'patient') ...[
             FilledButton.tonalIcon(
@@ -159,7 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon: const Icon(Icons.link),
               label: const Text('Добавить лечащего врача или родственника'),
             ),
-            const SizedBox(height: AppSizes.spaceM),
+            SizedBox(height: layout.spaceM),
           ],
           if (auth.isAuthenticated && auth.role == 'caregiver') ...[
             FilledButton.tonalIcon(
@@ -167,13 +172,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon: const Icon(Icons.person_add_alt_1),
               label: const Text('Добавить пациента по коду'),
             ),
-            const SizedBox(height: AppSizes.spaceM),
+            SizedBox(height: layout.spaceM),
           ],
           TextField(
             controller: _name,
             decoration: const InputDecoration(labelText: 'Имя', border: OutlineInputBorder()),
           ),
-          const SizedBox(height: AppSizes.spaceM),
+          SizedBox(height: layout.spaceM),
           TextField(
             controller: _surname,
             decoration: const InputDecoration(
@@ -181,9 +186,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               border: OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: AppSizes.spaceXl),
+          SizedBox(height: layout.spaceXl),
           FilledButton(onPressed: _save, child: const Text('Сохранить')),
-          const SizedBox(height: AppSizes.spaceXl),
+          SizedBox(height: layout.spaceXl),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text('Сделать весь шрифт жирным', style: theme.textTheme.titleSmall),

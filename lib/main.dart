@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:provider/provider.dart';
 
@@ -12,6 +13,7 @@ import 'app/services/notification_service.dart';
 import 'app/services/timezone_setup.dart';
 import 'app/storage/get_storage_key_value_store.dart';
 import 'app/time2t3_app.dart';
+import 'app/widgets/patient_foreground_binding.dart';
 import 'data/sources/remote/api_remote_data_source.dart';
 import 'features/caregiver/caregiver_scope.dart';
 import 'features/connectivity/connectivity_notifier.dart';
@@ -22,6 +24,7 @@ import 'features/timer/intake_timer_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  FlutterForegroundTask.initCommunicationPort();
   await GetStorage.init();
   await configureLocalTimeZone();
 
@@ -107,7 +110,9 @@ Future<void> main() async {
           },
         ),
       ],
-      child: Time2T3App(router: router),
+      child: PatientForegroundBinding(
+        child: Time2T3App(router: router),
+      ),
     ),
   );
 }

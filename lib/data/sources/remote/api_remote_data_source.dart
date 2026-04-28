@@ -21,6 +21,7 @@ class ApiRemoteDataSource implements RemoteSyncDataSource {
   static Medication _medicationFromApiMap(Map<String, dynamic> m) {
     final id = m['id']?.toString() ?? '';
     final modeRaw = m['reminder_mode'] as String? ?? 'interval';
+    final fitRaw = (m['first_intake_time'] as String?)?.trim();
     return Medication(
       id: id,
       name: m['name'] as String? ?? '',
@@ -28,17 +29,22 @@ class ApiRemoteDataSource implements RemoteSyncDataSource {
       reminderMode: ReminderMode.fromStorage(modeRaw),
       intervalMinutes: (m['interval_minutes'] as num?)?.toInt(),
       slotTimes: (m['slot_times'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+      firstIntakeHm: (fitRaw != null && fitRaw.isNotEmpty) ? fitRaw : null,
       updatedAt: m['updated_at'] != null ? DateTime.tryParse(m['updated_at'] as String) : null,
     );
   }
 
-  static Map<String, dynamic> _medicationToUpsertBody(Medication m) => {
-        'name': m.name,
-        'dosage': m.dosage,
-        'reminder_mode': m.reminderMode.storageValue,
-        'interval_minutes': m.intervalMinutes,
-        'slot_times': m.slotTimes.isEmpty ? null : m.slotTimes,
-      };
+  static Map<String, dynamic> _medicationToUpsertBody(Medication m) {
+    final f = m.firstIntakeHm;
+    return {
+      'name': m.name,
+      'dosage': m.dosage,
+      'reminder_mode': m.reminderMode.storageValue,
+      'interval_minutes': m.intervalMinutes,
+      'slot_times': m.slotTimes.isEmpty ? null : m.slotTimes,
+      'first_intake_time': (f != null && f.isNotEmpty) ? f : null,
+    };
+  }
 
   @override
   Future<List<Medication>> fetchMedications() async {

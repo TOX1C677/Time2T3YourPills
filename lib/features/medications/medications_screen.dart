@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../app/theme/app_sizes.dart';
+import '../../app/theme/app_screen_layout.dart';
 import '../../core/models/reminder_mode.dart';
 import '../auth/auth_session.dart';
 import '../caregiver/caregiver_scope.dart';
@@ -13,53 +13,73 @@ class MedicationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final layout = context.layout;
     final meds = context.watch<MedicationsController>();
     final auth = context.watch<AuthSession>();
     final cg = context.watch<CaregiverScope>();
     final theme = Theme.of(context);
-    final bottomFabPad = 128.0 + MediaQuery.viewPaddingOf(context).bottom;
+    final bottomFabPad = layout.bottomFabClearance(MediaQuery.viewPaddingOf(context).bottom);
 
     final caregiverNoPatients =
         auth.isAuthenticated && auth.role == 'caregiver' && cg.patients.isEmpty;
 
+    final showPatientPicker =
+        auth.isAuthenticated && auth.role == 'caregiver' && cg.patients.isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Таблетки'),
-        actions: [
-          if (auth.isAuthenticated && auth.role == 'caregiver' && cg.patients.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(left: 8, right: 12),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 220),
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: cg.selectedPatientUserId != null &&
-                            cg.patients.any((p) => p.patientUserId == cg.selectedPatientUserId)
-                        ? cg.selectedPatientUserId
-                        : cg.patients.first.patientUserId,
-                    items: [
-                      for (final p in cg.patients)
-                        DropdownMenuItem<String>(
-                          value: p.patientUserId,
-                          child: Text(p.label, overflow: TextOverflow.ellipsis),
-                        ),
-                    ],
-                    onChanged: (id) async {
-                      if (id == null) return;
-                      context.read<CaregiverScope>().selectPatient(id);
-                      await context.read<MedicationsController>().refreshFromServer();
-                    },
+        // Без слова «Таблетки»: для опекуна вся ширина под выбор пациента (имя + фамилия).
+        titleSpacing: showPatientPicker ? 0 : null,
+        centerTitle: false,
+        title: showPatientPicker
+            ? Padding(
+                padding: EdgeInsets.only(right: layout.spaceS),
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  underline: const SizedBox.shrink(),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
                   ),
+                  value: cg.selectedPatientUserId != null &&
+                          cg.patients.any((p) => p.patientUserId == cg.selectedPatientUserId)
+                      ? cg.selectedPatientUserId
+                      : cg.patients.first.patientUserId,
+                  selectedItemBuilder: (context) => [
+                    for (final p in cg.patients)
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(
+                          p.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
+                  items: [
+                    for (final p in cg.patients)
+                      DropdownMenuItem<String>(
+                        value: p.patientUserId,
+                        child: Text(p.label, overflow: TextOverflow.ellipsis),
+                      ),
+                  ],
+                  onChanged: (id) async {
+                    if (id == null) return;
+                    context.read<CaregiverScope>().selectPatient(id);
+                    await context.read<MedicationsController>().refreshFromServer();
+                  },
                 ),
-              ),
-            ),
-        ],
+              )
+            : const SizedBox.shrink(),
       ),
       body: caregiverNoPatients
           ? Center(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(AppSizes.spaceM, AppSizes.spaceM, AppSizes.spaceM, bottomFabPad),
+                padding: EdgeInsets.fromLTRB(layout.spaceM, layout.spaceM, layout.spaceM, bottomFabPad),
                 child: Text(
                   'Нет привязанных пациентов. В профиле нажмите «Добавить пациента по коду».',
                   style: theme.textTheme.bodyLarge,
@@ -70,7 +90,7 @@ class MedicationsScreen extends StatelessWidget {
           : meds.items.isEmpty
           ? Center(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(AppSizes.spaceM, AppSizes.spaceM, AppSizes.spaceM, bottomFabPad),
+                padding: EdgeInsets.fromLTRB(layout.spaceM, layout.spaceM, layout.spaceM, bottomFabPad),
                 child: Text(
                   'Пока нет препаратов. Добавьте первый.',
                   style: theme.textTheme.bodyLarge,
@@ -81,13 +101,13 @@ class MedicationsScreen extends StatelessWidget {
           : Theme(
               data: theme.copyWith(
                 cardTheme: theme.cardTheme.copyWith(
-                  margin: const EdgeInsets.symmetric(horizontal: 0, vertical: AppSizes.spaceS),
+                  margin: EdgeInsets.symmetric(vertical: layout.spaceS),
                 ),
               ),
               child: ListView.separated(
-                padding: EdgeInsets.fromLTRB(0, AppSizes.spaceM, 0, bottomFabPad),
+                padding: EdgeInsets.fromLTRB(0, layout.spaceM, 0, bottomFabPad),
                 itemCount: meds.items.length,
-                separatorBuilder: (context, _) => const SizedBox(height: AppSizes.spaceS),
+                separatorBuilder: (context, _) => SizedBox(height: layout.spaceS),
                 itemBuilder: (context, index) {
                   final m = meds.items[index];
                   final modeLabel = m.reminderMode == ReminderMode.fixedInterval
@@ -100,12 +120,16 @@ class MedicationsScreen extends StatelessWidget {
                       width: double.infinity,
                       child: Container(
                         alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceL),
+                        padding: EdgeInsets.symmetric(horizontal: layout.spaceL),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.error,
-                          borderRadius: BorderRadius.circular(AppSizes.cardRadius),
+                          borderRadius: BorderRadius.circular(layout.cardRadius),
                         ),
-                        child: Icon(Icons.delete_outline, color: theme.colorScheme.onError, size: 40),
+                        child: Icon(
+                          Icons.delete_outline,
+                          color: theme.colorScheme.onError,
+                          size: layout.shortestSide * 0.103,
+                        ),
                       ),
                     ),
                     confirmDismiss: (direction) async {
@@ -125,14 +149,14 @@ class MedicationsScreen extends StatelessWidget {
                         clipBehavior: Clip.antiAlias,
                         margin: EdgeInsets.zero,
                         child: Padding(
-                          padding: const EdgeInsets.all(AppSizes.spaceM),
+                          padding: EdgeInsets.all(layout.spaceM),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Text(m.name, style: theme.textTheme.titleLarge),
-                              const SizedBox(height: AppSizes.spaceXs),
+                              SizedBox(height: layout.spaceXs),
                               Text('Доза: ${m.dosage}', style: theme.textTheme.bodyLarge),
-                              const SizedBox(height: AppSizes.spaceXs),
+                              SizedBox(height: layout.spaceXs),
                               Text(modeLabel, style: theme.textTheme.bodyMedium),
                               if (m.reminderMode == ReminderMode.fixedInterval && m.intervalMinutes != null)
                                 Text('Каждые ${m.intervalMinutes} мин.', style: theme.textTheme.bodyMedium),
@@ -152,14 +176,14 @@ class MedicationsScreen extends StatelessWidget {
           ? null
           : Padding(
         padding: EdgeInsets.fromLTRB(
-          AppSizes.spaceM,
+          layout.spaceM,
           0,
-          AppSizes.spaceM,
-          AppSizes.spaceM + MediaQuery.viewPaddingOf(context).bottom,
+          layout.spaceM,
+          layout.spaceM + MediaQuery.viewPaddingOf(context).bottom,
         ),
         child: SizedBox(
-          width: MediaQuery.sizeOf(context).width - AppSizes.spaceM * 2,
-          height: 96,
+          width: layout.wideButtonWidth(),
+          height: layout.minTouch + layout.spaceS,
           child: FilledButton(
             onPressed: () async {
               if (auth.isAuthenticated &&
@@ -178,8 +202,8 @@ class MedicationsScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.add, size: 44),
-                const SizedBox(width: AppSizes.spaceM),
+                Icon(Icons.add, size: layout.shortestSide * 0.113),
+                SizedBox(width: layout.spaceM),
                 Text(
                   'Добавить',
                   style: theme.textTheme.titleLarge?.copyWith(color: theme.colorScheme.onPrimary),

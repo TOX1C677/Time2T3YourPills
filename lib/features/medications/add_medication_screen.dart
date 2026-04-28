@@ -1,10 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../app/theme/app_sizes.dart';
+import '../../app/theme/app_screen_layout.dart';
 import '../../core/models/medication.dart';
 import '../../core/models/reminder_mode.dart';
 import 'medications_controller.dart';
@@ -34,6 +35,9 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
 
   /// Чтобы [CupertinoDatePicker] заново подхватывал [initialDateTime] при повторном открытии.
   int _pickerSession = 0;
+
+  /// Локальное время первого приёма (интервал и график).
+  TimeOfDay _firstIntakeTime = const TimeOfDay(hour: 8, minute: 0);
 
   DateTime get _draftAsDateTime => DateTime(2024, 1, 1, _draftTime.hour, _draftTime.minute);
 
@@ -103,60 +107,179 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
       reminderMode: _mode,
       intervalMinutes: intervalMinutes,
       slotTimes: slots,
+      firstIntakeHm: _formatHm(_firstIntakeTime),
     );
 
     await context.read<MedicationsController>().upsert(med);
     if (mounted) context.pop();
   }
 
+  Future<void> _pickFirstIntakeTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _firstIntakeTime,
+    );
+    if (picked != null) setState(() => _firstIntakeTime = picked);
+  }
+
+  void _setReminderMode(ReminderMode next) {
+    if (_mode == next) return;
+    setState(() {
+      if (_mode == ReminderMode.scheduledSlots && next == ReminderMode.fixedInterval) {
+        _scheduleTimes.clear();
+        _showSchedulePicker = true;
+        _draftTime = const TimeOfDay(hour: 8, minute: 0);
+      }
+      _mode = next;
+      if (_mode == ReminderMode.scheduledSlots && _scheduleTimes.isEmpty) {
+        _showSchedulePicker = true;
+        _draftTime = const TimeOfDay(hour: 8, minute: 0);
+        _pickerSession++;
+      }
+    });
+  }
+
+  /// Две равные половины + [FittedBox], чтобы «Интервал» не переносился (в отличие от [SegmentedButton]).
+  Widget _buildReminderModePicker({
+    required ThemeData theme,
+    required AppScreenLayout layout,
+    required TextStyle modeSegmentStyle,
+    required double modeIconSize,
+    required double segmentPaddingH,
+    required double segmentPaddingV,
+    required double modeIconSlotW,
+  }) {
+    final scheme = theme.colorScheme;
+    final r = layout.cardRadius;
+
+    Widget cell(ReminderMode value, String label, IconData iconIdle) {
+      final selected = _mode == value;
+      final fg = selected ? scheme.onSecondaryContainer : scheme.onSurface;
+      return Material(
+        color: selected ? scheme.secondaryContainer : scheme.surface,
+        child: InkWell(
+          onTap: () => _setReminderMode(value),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: segmentPaddingH, vertical: segmentPaddingV),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: modeIconSlotW,
+                  child: Center(
+                    child: Icon(
+                      selected ? Icons.check : iconIdle,
+                      size: modeIconSize,
+                      color: fg,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        style: modeSegmentStyle.copyWith(color: fg),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Semantics(
+      label: 'Способ напоминания',
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(r),
+          border: Border.all(color: scheme.outline),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: cell(ReminderMode.fixedInterval, 'Интервал', Icons.schedule)),
+              VerticalDivider(width: 1, thickness: 1, color: scheme.outline),
+              Expanded(child: cell(ReminderMode.scheduledSlots, 'График', Icons.event_note)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final layout = context.layout;
+    final layoutW = layout.screenWidth;
+    const modeLabelFraction = 0.064; // подписи «Интервал» / «График»
+    const modeIconFraction = 0.07;
+    final modeLabelPx = layoutW * modeLabelFraction;
+    final segmentBase = theme.textTheme.labelLarge ?? theme.textTheme.bodyMedium ?? const TextStyle();
+    final modeSegmentStyle = segmentBase.copyWith(
+      fontSize: modeLabelPx,
+      height: 1.15,
+      fontWeight: FontWeight.w500,
+    );
+    final modeIconSize = layoutW * modeIconFraction;
+    final segmentPaddingH = layoutW * 0.018;
+    final segmentPaddingV = layoutW * 0.038;
+    final minModeIconSlotW = modeIconSize + 6;
+    final maxModeIconSlotW = layoutW * 0.09;
+    final modeIconSlotUpper = maxModeIconSlotW >= minModeIconSlotW ? maxModeIconSlotW : minModeIconSlotW;
+    final modeIconSlotW = (modeIconSize * 1.28).clamp(minModeIconSlotW, modeIconSlotUpper);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Новый препарат')),
       body: ListView(
-        padding: const EdgeInsets.all(AppSizes.spaceM),
+        padding: EdgeInsets.all(layout.spaceM),
         children: [
           Text(
             'Выберите способ напоминания: равномерный интервал или фиксированные времена.',
             style: theme.textTheme.bodyMedium,
           ),
-          const SizedBox(height: AppSizes.spaceL),
-          SegmentedButton<ReminderMode>(
-            segments: const [
-              ButtonSegment(value: ReminderMode.fixedInterval, label: Text('Интервал'), icon: Icon(Icons.schedule)),
-              ButtonSegment(value: ReminderMode.scheduledSlots, label: Text('График'), icon: Icon(Icons.event_note)),
-            ],
-            selected: {_mode},
-            onSelectionChanged: (s) {
-              setState(() {
-                final next = s.first;
-                if (_mode == ReminderMode.scheduledSlots && next == ReminderMode.fixedInterval) {
-                  _scheduleTimes.clear();
-                  _showSchedulePicker = true;
-                  _draftTime = const TimeOfDay(hour: 8, minute: 0);
-                }
-                _mode = next;
-                if (_mode == ReminderMode.scheduledSlots && _scheduleTimes.isEmpty) {
-                  _showSchedulePicker = true;
-                  _draftTime = const TimeOfDay(hour: 8, minute: 0);
-                  _pickerSession++;
-                }
-              });
-            },
+          SizedBox(height: layout.spaceL),
+          _buildReminderModePicker(
+            theme: theme,
+            layout: layout,
+            modeSegmentStyle: modeSegmentStyle,
+            modeIconSize: modeIconSize,
+            segmentPaddingH: segmentPaddingH,
+            segmentPaddingV: segmentPaddingV,
+            modeIconSlotW: modeIconSlotW,
           ),
-          const SizedBox(height: AppSizes.spaceL),
+          SizedBox(height: layout.spaceM),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.schedule),
+            title: const Text('Время первого приёма'),
+            subtitle: Text(
+              'Сейчас: ${_formatHm(_firstIntakeTime)} · для интервала — отсчёт от этой отметки дня; для графика — не раньше этого момента при выборе слотов.',
+              style: theme.textTheme.bodySmall,
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _pickFirstIntakeTime,
+          ),
+          SizedBox(height: layout.spaceL),
           TextField(
             controller: _name,
             decoration: const InputDecoration(labelText: 'Название', border: OutlineInputBorder()),
           ),
-          const SizedBox(height: AppSizes.spaceM),
+          SizedBox(height: layout.spaceM),
           TextField(
             controller: _dosage,
             decoration: const InputDecoration(labelText: 'Доза', border: OutlineInputBorder()),
           ),
-          const SizedBox(height: AppSizes.spaceL),
+          SizedBox(height: layout.spaceL),
           if (_mode == ReminderMode.fixedInterval) ...[
             TextField(
               controller: _interval,
@@ -171,7 +294,7 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
               'Выберите время приёма колесом. После сохранения оно появится в поле ниже — можно добавить несколько времён.',
               style: theme.textTheme.bodyMedium,
             ),
-            const SizedBox(height: AppSizes.spaceM),
+            SizedBox(height: layout.spaceM),
             InputDecorator(
               decoration: const InputDecoration(
                 labelText: 'Выбранные времена',
@@ -179,7 +302,7 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
                 alignLabelWithHint: true,
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceS),
+                padding: EdgeInsets.symmetric(vertical: layout.spaceS),
                 child: _scheduleTimes.isEmpty
                     ? Text(
                         '— пока нет —',
@@ -188,8 +311,8 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
                         ),
                       )
                     : Wrap(
-                        spacing: AppSizes.spaceS,
-                        runSpacing: AppSizes.spaceS,
+                        spacing: layout.spaceS,
+                        runSpacing: layout.spaceS,
                         children: [
                           for (final entry in _scheduleTimes.asMap().entries)
                             InputChip(
@@ -210,10 +333,10 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
                       ),
               ),
             ),
-            const SizedBox(height: AppSizes.spaceL),
+            SizedBox(height: layout.spaceL),
             if (_showSchedulePicker) ...[
               Text('Выбор времени', style: theme.textTheme.titleSmall),
-              const SizedBox(height: AppSizes.spaceS),
+              SizedBox(height: layout.spaceS),
               SizedBox(
                 key: ValueKey<int>(_pickerSession),
                 height: 300,
@@ -221,9 +344,9 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
                   data: CupertinoThemeData(
                     brightness: theme.brightness,
                     textTheme: CupertinoTextThemeData(
-                      dateTimePickerTextStyle: TextStyle(
+                      dateTimePickerTextStyle: GoogleFonts.notoSans(
                         color: theme.colorScheme.onSurface,
-                        fontSize: 34,
+                        fontSize: layout.shortestSide * 0.0872,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -241,7 +364,7 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: AppSizes.spaceM),
+              SizedBox(height: layout.spaceM),
               if (_scheduleTimes.isNotEmpty)
                 Row(
                   children: [
@@ -251,7 +374,7 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
                         child: const Text('Отмена'),
                       ),
                     ),
-                    const SizedBox(width: AppSizes.spaceM),
+                    SizedBox(width: layout.spaceM),
                     Expanded(
                       child: FilledButton(
                         onPressed: _commitDraftScheduleTime,
@@ -283,7 +406,7 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
               ),
             ],
           ],
-          const SizedBox(height: AppSizes.spaceXl),
+          SizedBox(height: layout.spaceXl),
           FilledButton(onPressed: _save, child: const Text('Сохранить')),
         ],
       ),

@@ -45,15 +45,36 @@ abstract final class IntakeSchedule {
     }
   }
 
+  /// Следующий приём для интервала: от «времени первого приёма» по сетке шагов [min], иначе через [min] от [now].
+  static DateTime? _nextIntervalDue(Medication m, DateTime now) {
+    final min = m.intervalMinutes;
+    if (min == null || min <= 0) return null;
+    final step = Duration(minutes: min);
+    final first = parseSlotHm(m.firstIntakeHm ?? '');
+    if (first == null) {
+      return now.add(step);
+    }
+    var t = DateTime(now.year, now.month, now.day, first.hour, first.minute);
+    // Строго после текущего момента, шагая сеткой интервала от якоря дня.
+    while (!t.isAfter(now)) {
+      t = t.add(step);
+    }
+    return t;
+  }
+
   static DateTime? initialNextDueForMedication(Medication m, DateTime now) {
     switch (m.reminderMode) {
       case ReminderMode.fixedInterval:
-        final min = m.intervalMinutes;
-        if (min == null || min <= 0) return null;
-        return now.add(Duration(minutes: min));
+        return _nextIntervalDue(m, now);
       case ReminderMode.scheduledSlots:
         if (m.slotTimes.isEmpty) return null;
-        return nextSlotAfter(now, m.slotTimes);
+        final first = parseSlotHm(m.firstIntakeHm ?? '');
+        if (first == null) {
+          return nextSlotAfter(now, m.slotTimes);
+        }
+        final todayFirst = DateTime(now.year, now.month, now.day, first.hour, first.minute);
+        final from = todayFirst.isAfter(now) ? todayFirst : now;
+        return nextSlotAfter(from, m.slotTimes);
     }
   }
 

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../app/theme/app_sizes.dart';
+import '../../app/theme/app_screen_layout.dart';
 import '../../core/errors/user_error_ru.dart';
 import '../../core/models/missed_intake_alert.dart';
 import '../auth/auth_session.dart';
@@ -80,6 +80,7 @@ class _CaregiverAlertsScreenState extends State<CaregiverAlertsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final layout = context.layout;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Пропуски приёмов'),
@@ -96,7 +97,7 @@ class _CaregiverAlertsScreenState extends State<CaregiverAlertsScreen> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(AppSizes.spaceM),
+        padding: EdgeInsets.all(layout.spaceM),
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
@@ -111,7 +112,7 @@ class _CaregiverAlertsScreenState extends State<CaregiverAlertsScreen> {
                       )
                     : ListView.separated(
                         itemCount: _items.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: AppSizes.spaceS),
+                        separatorBuilder: (_, _) => SizedBox(height: layout.spaceS),
                         itemBuilder: (context, i) {
                           final a = _items[i];
                           return Card(

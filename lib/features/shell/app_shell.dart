@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../app/theme/app_sizes.dart';
+import '../../app/theme/app_screen_layout.dart';
 import '../auth/auth_session.dart';
 import '../caregiver/caregiver_scope.dart';
 import '../connectivity/connectivity_notifier.dart';
+import '../timer/intake_timer_controller.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.navigationShell});
@@ -45,11 +46,16 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final auth = context.read<AuthSession>();
       if (auth.isAuthenticated && auth.role == 'caregiver') {
-        context.read<CaregiverScope>().refreshMissedAlertsCount();
+        await context.read<CaregiverScope>().refreshMissedAlertsCount();
+      }
+      if (!mounted) return;
+      // Сразу подтянуть препараты в таймер (до открытия вкладки «Таймер»).
+      if (auth.isAuthenticated && auth.role == 'patient') {
+        await context.read<IntakeTimerController>().refreshFromMedications();
       }
     });
   }
@@ -111,7 +117,17 @@ class _AppShellState extends State<AppShell> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: isCaregiver ? caregiverSelectedDisplay() : navigationShell.currentIndex,
-        onDestinationSelected: isCaregiver ? onCaregiverSelect : navigationShell.goBranch,
+        onDestinationSelected: isCaregiver
+            ? onCaregiverSelect
+            : (int index) {
+                navigationShell.goBranch(index);
+                if (index == 0) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    context.read<IntakeTimerController>().refreshFromMedications();
+                  });
+                }
+              },
         destinations: isCaregiver ? _caregiverDestinations(cg.missedAlertsCount) : _patientDestinations,
       ),
     );
@@ -123,17 +139,18 @@ class _OfflineBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final layout = context.layout;
     final scheme = Theme.of(context).colorScheme;
     return Material(
       color: scheme.secondaryContainer,
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceM, vertical: AppSizes.spaceS),
+          padding: EdgeInsets.symmetric(horizontal: layout.spaceM, vertical: layout.spaceS),
           child: Row(
             children: [
               Icon(Icons.cloud_off, color: scheme.onSecondaryContainer),
-              const SizedBox(width: AppSizes.spaceS),
+              SizedBox(width: layout.spaceS),
               Expanded(
                 child: Text(
                   'Нет сети: работаем из кэша, изменения в очереди на отправку.',

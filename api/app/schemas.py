@@ -87,6 +87,7 @@ class MedicationOut(BaseModel):
     reminder_mode: str
     interval_minutes: int | None = None
     slot_times: list[str] | None = None
+    first_intake_time: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -141,6 +142,7 @@ class MedicationUpsert(BaseModel):
     reminder_mode: str = Field(pattern="^(interval|schedule)$")
     interval_minutes: int | None = None
     slot_times: list[str] | None = None
+    first_intake_time: str | None = Field(default=None, max_length=8)
 
 
 class MissedIntakeAlertOut(BaseModel):

@@ -110,6 +110,7 @@ def upsert_my_medication(
             reminder_mode=body.reminder_mode,
             interval_minutes=body.interval_minutes,
             slot_times=body.slot_times,
+            first_intake_time=body.first_intake_time,
             deleted_at=None,
         )
         db.add(row)
@@ -121,6 +122,7 @@ def upsert_my_medication(
         row.reminder_mode = body.reminder_mode
         row.interval_minutes = body.interval_minutes
         row.slot_times = body.slot_times
+        row.first_intake_time = body.first_intake_time
         row.deleted_at = None
     db.commit()
     db.refresh(row)
