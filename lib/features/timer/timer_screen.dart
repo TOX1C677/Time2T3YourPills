@@ -264,7 +264,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
             SizedBox(height: layout.spaceM),
           ],
           if (!intake.hasMedications) ...[
-            Text('Добавьте препараты на вкладке «Таблетки» — интервал или график подтянется сюда автоматически.', style: theme.textTheme.bodyLarge),
+            Text('Добавьте препараты на вкладке «Медикаменты» — интервал или график подтянется сюда автоматически.', style: theme.textTheme.bodyLarge),
           ] else ...[
             if (intake.hasAnySchedule) ...[
               Text(
@@ -281,7 +281,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
                 Text(
                   'Пока приём не подтверждён, циферблат — время до ближайшего следующего слота (в том числе другие препараты).',
                   style: theme.textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
+                  textAlign: TextAlign.start,
                 ),
               ],
               SizedBox(height: layout.spaceS),

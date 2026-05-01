@@ -11,7 +11,10 @@ import '../../core/models/reminder_mode.dart';
 import 'medications_controller.dart';
 
 class AddMedicationRouteScreen extends StatefulWidget {
-  const AddMedicationRouteScreen({super.key});
+  const AddMedicationRouteScreen({super.key, this.editingMedicationId});
+
+  /// Если задан — режим редактирования существующего препарата (тот же `id` при сохранении).
+  final String? editingMedicationId;
 
   @override
   State<AddMedicationRouteScreen> createState() => _AddMedicationRouteScreenState();
@@ -38,6 +41,80 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
 
   /// Локальное время первого приёма (интервал и график).
   TimeOfDay _firstIntakeTime = const TimeOfDay(hour: 8, minute: 0);
+
+  /// Для режима редактирования: ждём подгрузку полей из списка.
+  bool _editHydrated = true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.editingMedicationId != null) {
+      _editHydrated = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _tryLoadForEdit(widget.editingMedicationId!);
+      });
+    }
+  }
+
+  void _tryLoadForEdit(String id) {
+    final meds = context.read<MedicationsController>().items;
+    Medication? found;
+    for (final x in meds) {
+      if (x.id == id) {
+        found = x;
+        break;
+      }
+    }
+    if (!mounted) return;
+    if (found == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Препарат не найден. Обновите список.')),
+      );
+      context.pop();
+      return;
+    }
+    _applyMedication(found);
+    setState(() => _editHydrated = true);
+  }
+
+  void _applyMedication(Medication m) {
+    _name.text = m.name;
+    _dosage.text = m.dosage;
+    _mode = m.reminderMode;
+    if (m.reminderMode == ReminderMode.fixedInterval) {
+      _interval.text = '${m.intervalMinutes ?? 60}';
+      _scheduleTimes.clear();
+      _showSchedulePicker = true;
+    } else {
+      _scheduleTimes.clear();
+      for (final slot in m.slotTimes) {
+        final t = _parseHm(slot);
+        if (t != null) {
+          _scheduleTimes.add(t);
+        }
+      }
+      _scheduleTimes.sort((a, b) => a.hour * 60 + a.minute - b.hour * 60 - b.minute);
+      _showSchedulePicker = _scheduleTimes.isEmpty;
+      if (_scheduleTimes.isNotEmpty) {
+        _draftTime = _scheduleTimes.last;
+      }
+    }
+    final first = _parseHm(m.firstIntakeHm);
+    if (first != null) {
+      _firstIntakeTime = first;
+    }
+  }
+
+  static TimeOfDay? _parseHm(String? s) {
+    if (s == null || s.trim().isEmpty) return null;
+    final parts = s.trim().split(':');
+    if (parts.length != 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return null;
+    return TimeOfDay(hour: h.clamp(0, 23), minute: m.clamp(0, 59));
+  }
 
   DateTime get _draftAsDateTime => DateTime(2024, 1, 1, _draftTime.hour, _draftTime.minute);
 
@@ -136,7 +213,7 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
     }
 
     final med = Medication(
-      id: const Uuid().v4(),
+      id: widget.editingMedicationId ?? const Uuid().v4(),
       name: name,
       dosage: dosage,
       reminderMode: _mode,
@@ -266,8 +343,12 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
     final modeIconSlotW = (modeIconSize * 1.28).clamp(minModeIconSlotW, modeIconSlotUpper);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Новый препарат')),
-      body: ListView(
+      appBar: AppBar(
+        title: Text(widget.editingMedicationId != null ? 'Изменить препарат' : 'Новый препарат'),
+      ),
+      body: !_editHydrated
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
         padding: EdgeInsets.all(layout.spaceM),
         children: [
           Text(

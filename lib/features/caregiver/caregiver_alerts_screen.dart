@@ -25,7 +25,10 @@ class _CaregiverAlertsScreenState extends State<CaregiverAlertsScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _load();
+    });
   }
 
   Future<void> _load() async {
@@ -52,7 +55,7 @@ class _CaregiverAlertsScreenState extends State<CaregiverAlertsScreen> {
           _items = list;
           _loading = false;
         });
-        await context.read<CaregiverScope>().refreshMissedAlertsCount();
+        context.read<CaregiverScope>().markAlertsListViewed(list.length);
       }
     } on DioException catch (e) {
       if (mounted) {
@@ -83,7 +86,15 @@ class _CaregiverAlertsScreenState extends State<CaregiverAlertsScreen> {
     final layout = context.layout;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Пропуски приёмов'),
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.center,
+          child: Text(
+            'Пропуски приёмов',
+            maxLines: 1,
+            style: theme.textTheme.titleLarge?.copyWith(fontSize: 26),
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),

@@ -1,29 +1,34 @@
 import 'dart:convert';
 
 import '../../app/storage/key_value_store.dart';
-import '../../app/storage/storage_keys.dart';
 import '../../core/models/medication.dart';
 import '../sources/remote/remote_sync_data_source.dart';
 import 'outbox_repository.dart';
 
 class MedicationsRepository {
-  MedicationsRepository(this._store, this._remote, this._outbox);
+  MedicationsRepository(
+    this._store,
+    this._remote,
+    this._outbox, {
+    required String Function() storageKey,
+  }) : _storageKey = storageKey;
 
   final KeyValueStore _store;
   final RemoteSyncDataSource _remote;
   final OutboxRepository _outbox;
+  final String Function() _storageKey;
 
   Future<void> clearLocal() async {
     await persistLocal(const []);
   }
 
   Future<List<Medication>> loadLocal() async {
-    final raw = await _store.read(StorageKeys.medicationsJson);
+    final raw = await _store.read(_storageKey());
     return Medication.listFromJsonString(raw);
   }
 
   Future<void> persistLocal(List<Medication> items) async {
-    await _store.write(StorageKeys.medicationsJson, Medication.listToJsonString(items));
+    await _store.write(_storageKey(), Medication.listToJsonString(items));
   }
 
   /// Локально + outbox. Офлайн-правки имеют приоритет до успешной отправки.

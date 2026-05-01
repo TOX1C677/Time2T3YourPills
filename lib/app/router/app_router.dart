@@ -113,6 +113,14 @@ GoRouter createAppRouter(AuthSession auth) {
         builder: (context, state) => const CaregiverAlertsScreen(),
       ),
       GoRoute(
+        path: '/medications/edit/:medicationId',
+        name: 'medications_edit',
+        builder: (context, state) {
+          final id = state.pathParameters['medicationId']!;
+          return AddMedicationRouteScreen(editingMedicationId: id);
+        },
+      ),
+      GoRoute(
         path: '/medications/add',
         name: 'medications_add',
         builder: (context, state) => const AddMedicationRouteScreen(),

@@ -24,4 +24,13 @@ class GetStorageKeyValueStore implements KeyValueStore {
   Future<void> remove(String key) async {
     await _box.remove(key);
   }
+
+  @override
+  Future<void> removeKeysWithPrefix(String prefix) async {
+    for (final k in List<String>.from(_box.getKeys())) {
+      if (k.startsWith(prefix)) {
+        await _box.remove(k);
+      }
+    }
+  }
 }

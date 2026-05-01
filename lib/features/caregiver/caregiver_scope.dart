@@ -11,31 +11,49 @@ class CaregiverScope extends ChangeNotifier {
 
   List<CaregiverPatientOption> _patients = [];
   String? _selectedPatientUserId;
-  int _missedAlertsCount = 0;
+  /// Последняя длина ответа `GET /v1/caregiver/alerts`.
+  int _serverAlertsTotal = 0;
+  /// Сколько записей опекун уже «увидел» на экране пропусков (бейдж = max(0, total − baseline)).
+  int _alertsViewedBaseline = 0;
 
   List<CaregiverPatientOption> get patients => List.unmodifiable(_patients);
 
   String? get selectedPatientUserId => _selectedPatientUserId;
 
-  /// Число записей `GET /v1/caregiver/alerts` (для бейджа в shell).
-  int get missedAlertsCount => _missedAlertsCount;
+  /// Новые пропуски с момента последнего просмотра списка (для бейджа в shell).
+  int get missedAlertsCount {
+    final d = _serverAlertsTotal - _alertsViewedBaseline;
+    return d > 0 ? d : 0;
+  }
+
+  /// Вызвать после успешной загрузки списка на экране «Пропуски приёмов» ([itemCount] = длина ответа API).
+  void markAlertsListViewed(int itemCount) {
+    _serverAlertsTotal = itemCount;
+    _alertsViewedBaseline = itemCount;
+    notifyListeners();
+  }
 
   void clear() {
     _patients = [];
     _selectedPatientUserId = null;
-    _missedAlertsCount = 0;
+    _serverAlertsTotal = 0;
+    _alertsViewedBaseline = 0;
     notifyListeners();
   }
 
   Future<void> refreshMissedAlertsCount() async {
     if (_auth.role != 'caregiver' || !_auth.isAuthenticated) {
-      _missedAlertsCount = 0;
+      _serverAlertsTotal = 0;
+      _alertsViewedBaseline = 0;
       notifyListeners();
       return;
     }
     try {
       final res = await _auth.dio.get<List<dynamic>>('/v1/caregiver/alerts');
-      _missedAlertsCount = (res.data ?? []).length;
+      _serverAlertsTotal = (res.data ?? []).length;
+      if (_alertsViewedBaseline > _serverAlertsTotal) {
+        _alertsViewedBaseline = _serverAlertsTotal;
+      }
     } catch (_) {
       // оставляем предыдущее значение
     }

@@ -30,10 +30,42 @@ class _IntakeHistoryScreenState extends State<IntakeHistoryScreen> {
   String? _error;
   bool _loading = true;
 
+  CaregiverScope? _cgScopeListener;
+  String? _lastCaregiverPatientIdForReload;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = context.read<AuthSession>();
+      if (auth.role == 'caregiver') {
+        final cg = context.read<CaregiverScope>();
+        if (cg.selectedPatientUserId == null && cg.patients.isNotEmpty) {
+          cg.selectPatient(cg.patients.first.patientUserId);
+        }
+        _cgScopeListener = cg;
+        _lastCaregiverPatientIdForReload = cg.selectedPatientUserId;
+        cg.addListener(_onCaregiverScopePatientChanged);
+      }
+      _load();
+    });
+  }
+
+  @override
+  void dispose() {
+    _cgScopeListener?.removeListener(_onCaregiverScopePatientChanged);
+    super.dispose();
+  }
+
+  void _onCaregiverScopePatientChanged() {
+    if (!mounted || _cgScopeListener == null) return;
+    final auth = context.read<AuthSession>();
+    if (auth.role != 'caregiver') return;
+    final pid = _cgScopeListener!.selectedPatientUserId;
+    if (pid == _lastCaregiverPatientIdForReload) return;
+    _lastCaregiverPatientIdForReload = pid;
+    _load();
   }
 
   Future<void> _load() async {
@@ -192,6 +224,64 @@ class _IntakeHistoryScreenState extends State<IntakeHistoryScreen> {
     );
   }
 
+  /// Выбор пациента для опекуна (тот же паттерн, что на вкладке «Медикаменты»).
+  Widget _caregiverPatientPicker({
+    required BuildContext context,
+    required ThemeData theme,
+    required AppScreenLayout layout,
+    required CaregiverScope cg,
+  }) {
+    final value = cg.selectedPatientUserId != null &&
+            cg.patients.any((p) => p.patientUserId == cg.selectedPatientUserId)
+        ? cg.selectedPatientUserId!
+        : cg.patients.first.patientUserId;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Пациент',
+          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        SizedBox(height: layout.spaceS * 0.5),
+        DropdownButton<String>(
+          isExpanded: true,
+          underline: const SizedBox.shrink(),
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+          ),
+          value: value,
+          selectedItemBuilder: (context) => [
+            for (final p in cg.patients)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  p.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+          items: [
+            for (final p in cg.patients)
+              DropdownMenuItem<String>(
+                value: p.patientUserId,
+                child: Text(p.label, overflow: TextOverflow.ellipsis),
+              ),
+          ],
+          onChanged: (id) {
+            if (id == null) return;
+            context.read<CaregiverScope>().selectPatient(id);
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final layout = context.layout;
@@ -199,19 +289,16 @@ class _IntakeHistoryScreenState extends State<IntakeHistoryScreen> {
     final cg = context.watch<CaregiverScope>();
     final theme = Theme.of(context);
 
-    String subtitle;
-    if (auth.role == 'caregiver') {
-      final sel = cg.selectedPatientUserId;
-      String? label;
-      for (final p in cg.patients) {
-        if (p.patientUserId == sel) {
-          label = p.label;
-          break;
-        }
-      }
-      subtitle = label != null && label.isNotEmpty ? 'Пациент: $label' : 'Выберите пациента на вкладке «Таблетки»';
-    } else {
-      subtitle = 'Ваши подтверждённые приёмы с телефона';
+    final showCaregiverPatientPicker =
+        auth.role == 'caregiver' && auth.isAuthenticated && cg.patients.isNotEmpty;
+
+    String? patientSubtitle;
+    if (auth.role == 'caregiver' && !showCaregiverPatientPicker) {
+      patientSubtitle = cg.patients.isEmpty
+          ? 'Нет привязанных пациентов. В профиле нажмите «Добавить пациента по коду».'
+          : 'Выберите пациента на вкладке «Медикаменты».';
+    } else if (auth.role == 'patient') {
+      patientSubtitle = 'Ваши подтверждённые приёмы с телефона';
     }
 
     final layoutW = layout.screenWidth;
@@ -247,7 +334,10 @@ class _IntakeHistoryScreenState extends State<IntakeHistoryScreen> {
           padding: EdgeInsets.all(layout.spaceM),
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
-          Text(subtitle, style: theme.textTheme.bodyMedium),
+          if (showCaregiverPatientPicker)
+            _caregiverPatientPicker(context: context, theme: theme, layout: layout, cg: cg)
+          else if (patientSubtitle != null)
+            Text(patientSubtitle, style: theme.textTheme.bodyMedium),
           SizedBox(height: layout.spaceM),
           _buildRangePicker(
             theme: theme,

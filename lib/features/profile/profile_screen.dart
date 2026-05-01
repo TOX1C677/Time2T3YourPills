@@ -11,6 +11,7 @@ import '../../core/errors/user_error_ru.dart';
 import '../auth/auth_session.dart';
 import '../caregiver/caregiver_scope.dart';
 import '../medications/medications_controller.dart';
+import '../timer/intake_timer_controller.dart';
 import '../../core/models/patient_profile.dart';
 import 'patient_controller.dart';
 import 'ui_preferences_controller.dart';
@@ -141,10 +142,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!await _confirmDeleteAccount()) return;
     if (!mounted) return;
     try {
+      final meds = context.read<MedicationsController>();
+      final timer = context.read<IntakeTimerController>();
       await context.read<AuthSession>().deleteAccount();
       if (!mounted) return;
       context.read<CaregiverScope>().clear();
       await context.read<AppServices>().clearUserBoundLocalCache();
+      if (!mounted) return;
+      await meds.load();
+      await timer.refreshFromMedications();
       if (!mounted) return;
       GoRouter.of(context).go('/login');
     } on DioException catch (e) {
@@ -195,11 +201,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 final authS = context.read<AuthSession>();
                 final cg = context.read<CaregiverScope>();
                 final app = context.read<AppServices>();
+                final meds = context.read<MedicationsController>();
+                final timer = context.read<IntakeTimerController>();
                 if (!await _confirmLogout()) return;
                 if (!mounted) return;
-                await authS.logout();
-                cg.clear();
                 await app.clearUserBoundLocalCache();
+                cg.clear();
+                await meds.load();
+                await timer.refreshFromMedications();
+                await authS.logout();
                 if (!mounted) return;
                 router.go('/login');
               }
@@ -319,6 +329,7 @@ class _LinkPatientByCodeDialogState extends State<_LinkPatientByCodeDialog> {
             final cg = widget.parentContext.read<CaregiverScope>();
             final app = widget.parentContext.read<AppServices>();
             final meds = widget.parentContext.read<MedicationsController>();
+            final timer = widget.parentContext.read<IntakeTimerController>();
             final messenger = ScaffoldMessenger.of(widget.parentContext);
             try {
               await auth.linkPatientByToken(_token.text);
@@ -331,6 +342,7 @@ class _LinkPatientByCodeDialogState extends State<_LinkPatientByCodeDialog> {
               } catch (_) {}
               if (!widget.parentContext.mounted) return;
               await meds.load();
+              await timer.refreshFromMedications();
               messenger.showSnackBar(const SnackBar(content: Text('Пациент привязан')));
             } on DioException catch (e) {
               if (context.mounted) {

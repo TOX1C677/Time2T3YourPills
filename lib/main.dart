@@ -12,6 +12,7 @@ import 'features/auth/auth_session.dart';
 import 'app/services/notification_service.dart';
 import 'app/services/timezone_setup.dart';
 import 'app/storage/get_storage_key_value_store.dart';
+import 'app/storage/storage_keys.dart';
 import 'app/time2t3_app.dart';
 import 'app/widgets/patient_foreground_binding.dart';
 import 'data/sources/remote/api_remote_data_source.dart';
@@ -49,6 +50,13 @@ Future<void> main() async {
     notifications: notifications,
     remote: remote,
     canApplyOutbox: () => auth.isAuthenticated,
+    outboxStorageKey: () => StorageKeys.outboxCacheKey(email: auth.email, role: auth.role),
+    medicationsStorageKey: () => StorageKeys.medicationsCacheKey(
+      email: auth.email,
+      role: auth.role,
+      caregiverPatientId: auth.role == 'caregiver' ? caregiverScope.selectedPatientUserId : null,
+    ),
+    patientStorageKey: () => StorageKeys.patientProfileCacheKey(email: auth.email, role: auth.role),
   );
   await appServices.init();
 
@@ -65,12 +73,18 @@ Future<void> main() async {
   }
 
   final intakeTimer = IntakeTimerController(appServices);
+  final medicationsController = MedicationsController(appServices, intakeTimer);
+  appServices.onMedicationsPersistedFromSync = () {
+    unawaited(medicationsController.load());
+    unawaited(intakeTimer.refreshFromMedications());
+  };
   notifications.onConfirmFromNotification = () {
     intakeTimer.confirm();
   };
   notifications.onSnoozeFromNotification = () {
     intakeTimer.snooze();
   };
+  await medicationsController.load();
   await intakeTimer.restore();
 
   final router = createAppRouter(auth);
@@ -89,13 +103,7 @@ Future<void> main() async {
           },
         ),
         ChangeNotifierProvider<IntakeTimerController>.value(value: intakeTimer),
-        ChangeNotifierProvider(
-          create: (_) {
-            final c = MedicationsController(appServices, intakeTimer);
-            c.load();
-            return c;
-          },
-        ),
+        ChangeNotifierProvider<MedicationsController>.value(value: medicationsController),
         ChangeNotifierProvider(
           create: (_) {
             final c = PatientController(appServices);

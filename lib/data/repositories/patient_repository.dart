@@ -1,25 +1,30 @@
 import 'dart:convert';
 
 import '../../app/storage/key_value_store.dart';
-import '../../app/storage/storage_keys.dart';
 import '../../core/models/patient_profile.dart';
 import '../sources/remote/remote_sync_data_source.dart';
 import 'outbox_repository.dart';
 
 class PatientRepository {
-  PatientRepository(this._store, this._remote, this._outbox);
+  PatientRepository(
+    this._store,
+    this._remote,
+    this._outbox, {
+    required String Function() storageKey,
+  }) : _storageKey = storageKey;
 
   final KeyValueStore _store;
   final RemoteSyncDataSource _remote;
   final OutboxRepository _outbox;
+  final String Function() _storageKey;
 
   Future<PatientProfile?> loadLocal() async {
-    final raw = await _store.read(StorageKeys.patientProfileJson);
+    final raw = await _store.read(_storageKey());
     return PatientProfile.tryParse(raw);
   }
 
   Future<void> persistLocal(PatientProfile profile) async {
-    await _store.write(StorageKeys.patientProfileJson, profile.toJsonString());
+    await _store.write(_storageKey(), profile.toJsonString());
   }
 
   Future<void> upsertLocalEnqueue(PatientProfile profile) async {
@@ -36,7 +41,7 @@ class PatientRepository {
   }
 
   Future<void> clearLocal() async {
-    await _store.remove(StorageKeys.patientProfileJson);
+    await _store.remove(_storageKey());
   }
 
   Future<PatientProfile?> pullPreferLocal() async {

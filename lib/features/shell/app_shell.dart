@@ -6,6 +6,7 @@ import '../../app/theme/app_screen_layout.dart';
 import '../auth/auth_session.dart';
 import '../caregiver/caregiver_scope.dart';
 import '../connectivity/connectivity_notifier.dart';
+import '../medications/medications_controller.dart';
 import '../timer/intake_timer_controller.dart';
 
 class AppShell extends StatefulWidget {
@@ -125,6 +126,12 @@ class _AppShellState extends State<AppShell> {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (!mounted) return;
                     context.read<IntakeTimerController>().refreshFromMedications();
+                  });
+                }
+                if (index == 1) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    context.read<MedicationsController>().load();
                   });
                 }
               },

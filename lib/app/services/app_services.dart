@@ -6,6 +6,7 @@ import '../../data/repositories/patient_repository.dart';
 import '../../data/sources/remote/api_remote_data_source.dart';
 import '../../data/sources/remote/remote_sync_data_source.dart';
 import '../storage/key_value_store.dart';
+import '../storage/storage_keys.dart';
 import 'notification_service.dart';
 
 /// Composition root: удалённый слой (`RemoteSyncDataSource`), KV, уведомления, репозитории. Поднимается в `main.dart`.
@@ -15,10 +16,23 @@ class AppServices {
     required this.notifications,
     required this.remote,
     bool Function()? canApplyOutbox,
+    required String Function() outboxStorageKey,
+    required String Function() medicationsStorageKey,
+    required String Function() patientStorageKey,
   }) : _canApplyOutbox = canApplyOutbox ?? (() => true) {
-    outbox = OutboxRepository(store);
-    medications = MedicationsRepository(store, remote, outbox);
-    patient = PatientRepository(store, remote, outbox);
+    outbox = OutboxRepository(store, storageKey: outboxStorageKey);
+    medications = MedicationsRepository(
+      store,
+      remote,
+      outbox,
+      storageKey: medicationsStorageKey,
+    );
+    patient = PatientRepository(
+      store,
+      remote,
+      outbox,
+      storageKey: patientStorageKey,
+    );
   }
 
   final KeyValueStore store;
@@ -30,15 +44,23 @@ class AppServices {
   late final MedicationsRepository medications;
   late final PatientRepository patient;
 
+  /// Вызывается после [syncRemoteNow] записал препараты на диск — подтянуть [MedicationsController] и [IntakeTimerController].
+  void Function()? onMedicationsPersistedFromSync;
+
   Future<void> init() async {
     await remote.seedIfEmpty();
   }
 
-  /// Сброс локального кэша, привязанного к аккаунту (перед входом другого пользователя или после логина).
+  /// Полный сброс локальных снимков и outbox (смена аккаунта / выход).
   Future<void> clearUserBoundLocalCache() async {
-    await patient.clearLocal();
-    await medications.clearLocal();
-    await outbox.clear();
+    await store.removeKeysWithPrefix('cache.medications.v3.');
+    await store.removeKeysWithPrefix('cache.patient.v3.');
+    await store.removeKeysWithPrefix('sync.outbox.v3.');
+    await store.remove(StorageKeys.medicationsJson);
+    await store.remove(StorageKeys.patientProfileJson);
+    await store.remove(StorageKeys.outboxJson);
+    await store.remove(StorageKeys.intakeTimerStateJson);
+    await store.remove(StorageKeys.intakeReminderEscalationJson);
   }
 
   /// Отправить outbox на API (если есть и разрешён вход), затем подтянуть препараты и профиль с сервера.
@@ -56,6 +78,7 @@ class AppServices {
     }
     final meds = await remote.fetchMedications();
     await medications.persistLocal(meds);
+    onMedicationsPersistedFromSync?.call();
     final p = await remote.fetchPatient();
     if (p != null) {
       await patient.persistLocal(p);
