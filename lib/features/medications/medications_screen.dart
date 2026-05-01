@@ -65,7 +65,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // Для опекуна — выбор пациента; для пациента — заголовок «Медикаменты» слева.
+        // Для опекуна - выбор пациента; для пациента - заголовок «Медикаменты» слева.
         titleSpacing: 0,
         centerTitle: false,
         title: showPatientPicker

@@ -9,7 +9,7 @@ import '../../core/services/intake_schedule.dart';
 import 'intake_reminder_escalation.dart';
 import 'intake_timer_state.dart';
 
-/// Таймер по всем препаратам: на экране — до ближайшего приёма; у каждого свой nextDue; уведомление по ближайшему событию.
+/// Таймер по всем препаратам: на экране - до ближайшего приёма; у каждого свой nextDue; уведомление по ближайшему событию.
 class IntakeTimerController extends ChangeNotifier {
   IntakeTimerController(this._services);
 
@@ -24,7 +24,7 @@ class IntakeTimerController extends ChangeNotifier {
 
   List<Medication> get medications => List.unmodifiable(_medications);
 
-  /// Препараты с валидным nextDue — от ближайшего приёма к более позднему.
+  /// Препараты с валидным nextDue - от ближайшего приёма к более позднему.
   List<Medication> get medicationsSortedByNextDue {
     final list = List<Medication>.from(_medications);
     list.sort((a, b) {
@@ -58,10 +58,10 @@ class IntakeTimerController extends ChangeNotifier {
     return best;
   }
 
-  /// Есть препараты в списке (включая «по графику») — экран таймера не в режиме онбординга.
+  /// Есть препараты в списке (включая «по графику») - экран таймера не в режиме онбординга.
   bool get hasMedications => _medications.isNotEmpty;
 
-  /// Есть хотя бы один рассчитанный следующий приём — показываем обратный отсчёт и уведомления.
+  /// Есть хотя бы один рассчитанный следующий приём - показываем обратный отсчёт и уведомления.
   bool get hasAnySchedule => _nextDue.isNotEmpty;
 
   bool get isDue {
@@ -75,7 +75,7 @@ class IntakeTimerController extends ChangeNotifier {
     if (e == null) return null;
     if (!e.isAfter(now)) {
       // Есть просрочка: большой таймер показывает время до ближайшего будущего слота (другие препараты),
-      // пока текущий(е) просроченный(е) ждут «Принял» / +15 мин — их _nextDue не сдвигаем.
+      // пока текущий(е) просроченный(е) ждут «Принял» / +15 мин - их _nextDue не сдвигаем.
       final future = _earliestStrictlyFuture(now);
       if (future != null) {
         final diff = future.difference(now);
@@ -318,7 +318,7 @@ class IntakeTimerController extends ChangeNotifier {
       return;
     }
 
-    // AlarmManager на части устройств не принимает время «прямо сейчас» — сдвигаем на пару секунд вперёд.
+    // AlarmManager на части устройств не принимает время «прямо сейчас» - сдвигаем на пару секунд вперёд.
     var when = scheduleAt;
     if (!when.isAfter(now.add(const Duration(seconds: 2)))) {
       when = now.add(const Duration(seconds: 3));

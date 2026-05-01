@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     caregiver_link_attempts_per_hour: int = 30
     # Лимит чтения кода привязки пациентом (GET invite-code в час)
     patient_invite_code_reads_per_hour: int = 60
-    # SMTP для писем опекунам о пропусках (если smtp_host пуст — только in-app)
+    # SMTP для писем опекунам о пропусках (если smtp_host пуст - только in-app)
     smtp_host: str = ""
     smtp_port: int = 587
     smtp_user: str = ""

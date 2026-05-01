@@ -12,7 +12,7 @@ class _PatientForegroundTaskHandler extends TaskHandler {
 
   @override
   void onRepeatEvent(DateTime timestamp) {
-    // Пустой цикл достаточен: цель — не дать ОС убить процесс с основным таймером и Dio.
+    // Пустой цикл достаточен: цель - не дать ОС убить процесс с основным таймером и Dio.
   }
 
   @override

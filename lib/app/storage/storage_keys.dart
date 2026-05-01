@@ -1,6 +1,6 @@
 /// Единый реестр ключей локального кэша (GetStorage). Без «магических строк» в коде.
 abstract final class StorageKeys {
-  /// Старый общий ключ (до изоляции по аккаунту) — удаляется при [clearUserBoundLocalCache].
+  /// Старый общий ключ (до изоляции по аккаунту) - удаляется при [clearUserBoundLocalCache].
   static const String medicationsJson = 'cache.medications.v1';
   static const String patientProfileJson = 'cache.patient.v1';
   static const String outboxJson = 'sync.outbox.v1';
@@ -13,7 +13,7 @@ abstract final class StorageKeys {
     return raw.replaceAll(RegExp(r'[^\w@\|.^-]'), '_');
   }
 
-  /// Кэш препаратов строго по сессии: пациент — по почте+роли; опекун — ещё и по выбранному `patient_user_id`.
+  /// Кэш препаратов строго по сессии: пациент - по почте+роли; опекун - ещё и по выбранному `patient_user_id`.
   static String medicationsCacheKey({
     required String? email,
     required String? role,

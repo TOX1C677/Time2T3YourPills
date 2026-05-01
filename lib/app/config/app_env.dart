@@ -6,7 +6,7 @@ import 'package:dio/dio.dart';
 /// `POST /v1/auth/refresh` (без рекурсии интерсепторов). Пути вида `/v1/...`.
 ///
 /// Остальной код использует только `auth.dio` или методы [AuthSession] (`login`, `register`,
-/// `fetchInviteCode`, …). Синк таблеток/профиля/outbox — [ApiRemoteDataSource] → тот же `_auth.dio`.
+/// `fetchInviteCode`, …). Синк таблеток/профиля/outbox - [ApiRemoteDataSource] → тот же `_auth.dio`.
 /// Прямых `Dio()`, `http`, `Uri.https` к своему API в `lib/` нет.
 abstract final class AppEnv {
   static const String apiBaseUrl = 'https://api.anti-toxic.ru';

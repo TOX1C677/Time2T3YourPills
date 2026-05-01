@@ -23,7 +23,7 @@ String dioErrorRu(DioException e) {
     if (_isMostlyRussian(detail) && detail.length <= 140) {
       return detail.trim();
     }
-    // Неизвестный текст от API (часто англ. валидация) — коротко по коду.
+    // Неизвестный текст от API (часто англ. валидация) - коротко по коду.
     switch (e.response?.statusCode) {
       case 422:
         return 'Проверьте поля формы';
@@ -114,10 +114,10 @@ String? _mapKnownDetail(String raw) {
   const m = <String, String>{
     'Email already registered': 'Этот email уже занят',
     'Invalid email or password': 'Неверный email или пароль',
-    'Invalid refresh token': 'Сессия устарела — войдите снова',
-    'Invalid token type': 'Сессия устарела — войдите снова',
-    'Invalid token': 'Сессия устарела — войдите снова',
-    'Refresh token revoked': 'Вы вышли на другом устройстве — войдите снова',
+    'Invalid refresh token': 'Сессия устарела - войдите снова',
+    'Invalid token type': 'Сессия устарела - войдите снова',
+    'Invalid token': 'Сессия устарела - войдите снова',
+    'Refresh token revoked': 'Вы вышли на другом устройстве - войдите снова',
     'User not found': 'Пользователь не найден',
     'Not authenticated': 'Войдите в аккаунт',
     'Patient role required': 'Нужна роль пациента',

@@ -25,7 +25,7 @@ engine = create_engine(
 
 @event.listens_for(engine, "connect")
 def _sqlite_enable_foreign_keys(dbapi_connection, connection_record) -> None:
-    """Без этого SQLite не применяет ON DELETE CASCADE — удаление пользователя не чистит связи."""
+    """Без этого SQLite не применяет ON DELETE CASCADE - удаление пользователя не чистит связи."""
     if engine.dialect.name == "sqlite":
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")

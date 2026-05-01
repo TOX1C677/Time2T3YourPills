@@ -17,7 +17,7 @@ class MockRemoteDataSource implements RemoteSyncDataSource {
   /// Имитация первичной выгрузки (пустой сервер).
   @override
   Future<void> seedIfEmpty() async {
-    // оставляем пустым — данные появятся после flush outbox или локального ввода
+    // оставляем пустым - данные появятся после flush outbox или локального ввода
   }
 
   @override

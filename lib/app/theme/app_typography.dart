@@ -8,7 +8,7 @@ abstract final class AppTypography {
   static FontWeight _displayWeight(bool bold) => bold ? FontWeight.w800 : FontWeight.w600;
   static FontWeight _titleWeight(bool bold) => bold ? FontWeight.w800 : FontWeight.w600;
   static FontWeight _bodyWeight(bool bold) => bold ? FontWeight.w700 : FontWeight.w400;
-  /// Как у кнопок/навигации — иначе label выглядит «другим шрифтом» рядом с body.
+  /// Как у кнопок/навигации - иначе label выглядит «другим шрифтом» рядом с body.
   static FontWeight _labelWeight(bool bold) => bold ? FontWeight.w800 : FontWeight.w500;
 
   static double _s(AppScreenLayout layout) => layout.shortestSide;
@@ -77,7 +77,7 @@ abstract final class AppTypography {
     );
   }
 
-  /// Экран таймера — чуть компактнее глобальной темы.
+  /// Экран таймера - чуть компактнее глобальной темы.
   static TextTheme timerScreenFrozen(TextTheme enlarged, AppScreenLayout layout) {
     final u = layout.shortestSide;
     return enlarged.copyWith(

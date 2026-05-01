@@ -81,7 +81,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  /// Две равные половины, фиксированная колонка иконки, своя галочка — без скачков и переносов текста.
+  /// Две равные половины, фиксированная колонка иконки, своя галочка - без скачков и переносов текста.
   Widget _buildRolePicker({
     required ThemeData theme,
     required AppScreenLayout layout,
@@ -184,7 +184,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // Внутри ячейки: умеренные доли, иначе при expanded съедается ширина под текст → перенос «Пациент».
     final segmentPaddingH = layoutW * 0.018;
     final segmentPaddingV = layoutW * 0.042;
-    // Слот чуть шире иконки — одна величина для обеих ячеек, без лишнего отъема у текста.
+    // Слот чуть шире иконки - одна величина для обеих ячеек, без лишнего отъема у текста.
     final minRoleIconSlotW = roleIconSize + 6;
     final maxRoleIconSlotW = layoutW * 0.09;
     final roleIconSlotUpper = maxRoleIconSlotW >= minRoleIconSlotW ? maxRoleIconSlotW : minRoleIconSlotW;
@@ -241,7 +241,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           SizedBox(height: layout.spaceM),
           OutlinedButton(
             onPressed: _loading ? null : () => context.pop(),
-            child: const Text('Уже есть аккаунт — войти'),
+            child: const Text('Уже есть аккаунт - войти'),
           ),
         ],
       ),

@@ -6,13 +6,13 @@ from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
-# Репозиторий: api/ — пакет app
+# Репозиторий: api/ - пакет app
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.config import settings  # noqa: E402
 from app.database import Base  # noqa: E402
 
-import app.models  # noqa: E402, F401 — регистрация моделей в metadata
+import app.models  # noqa: E402, F401 - регистрация моделей в metadata
 
 config = context.config
 

@@ -44,7 +44,7 @@ class AppServices {
   late final MedicationsRepository medications;
   late final PatientRepository patient;
 
-  /// Вызывается после [syncRemoteNow] записал препараты на диск — подтянуть [MedicationsController] и [IntakeTimerController].
+  /// Вызывается после [syncRemoteNow] записал препараты на диск - подтянуть [MedicationsController] и [IntakeTimerController].
   void Function()? onMedicationsPersistedFromSync;
 
   Future<void> init() async {
@@ -85,7 +85,7 @@ class AppServices {
     }
   }
 
-  /// Запись подтверждённого приёма на сервер; при ошибке сети — в outbox (`intake_event`).
+  /// Запись подтверждённого приёма на сервер; при ошибке сети - в outbox (`intake_event`).
   Future<void> recordIntakeConfirmed({
     required String medicationId,
     required DateTime scheduledAt,

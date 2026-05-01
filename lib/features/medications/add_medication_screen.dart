@@ -13,7 +13,7 @@ import 'medications_controller.dart';
 class AddMedicationRouteScreen extends StatefulWidget {
   const AddMedicationRouteScreen({super.key, this.editingMedicationId});
 
-  /// Если задан — режим редактирования существующего препарата (тот же `id` при сохранении).
+  /// Если задан - режим редактирования существующего препарата (тот же `id` при сохранении).
   final String? editingMedicationId;
 
   @override
@@ -33,7 +33,7 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
   /// Черновик на колесе Cupertino.
   TimeOfDay _draftTime = const TimeOfDay(hour: 8, minute: 0);
 
-  /// Показываем колесо выбора (первый раз — сразу; дальше — по кнопке «Добавить ещё»).
+  /// Показываем колесо выбора (первый раз - сразу; дальше - по кнопке «Добавить ещё»).
   bool _showSchedulePicker = true;
 
   /// Чтобы [CupertinoDatePicker] заново подхватывал [initialDateTime] при повторном открытии.
@@ -400,7 +400,7 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
             ),
           ] else ...[
             Text(
-              'Выберите время приёма колесом. После сохранения оно появится в поле ниже — можно добавить несколько времён.',
+              'Выберите время приёма колесом. После сохранения оно появится в поле ниже - можно добавить несколько времён.',
               style: theme.textTheme.bodyMedium,
             ),
             SizedBox(height: layout.spaceM),
@@ -414,7 +414,7 @@ class _AddMedicationRouteScreenState extends State<AddMedicationRouteScreen> {
                 padding: EdgeInsets.symmetric(vertical: layout.spaceS),
                 child: _scheduleTimes.isEmpty
                     ? Text(
-                        '— пока нет —',
+                        '- пока нет -',
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

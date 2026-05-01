@@ -9,9 +9,9 @@ import '../../core/models/intake_history_item.dart';
 import '../auth/auth_session.dart';
 import '../caregiver/caregiver_scope.dart';
 
-/// История приёмов: пациент — свои события; опекун — выбранный пациент из [CaregiverScope].
+/// История приёмов: пациент - свои события; опекун - выбранный пациент из [CaregiverScope].
 ///
-/// [embeddedInShell]: вкладка нижнего меню — без кнопки «назад» (см. план §7.2).
+/// [embeddedInShell]: вкладка нижнего меню - без кнопки «назад» (см. план §7.2).
 class IntakeHistoryScreen extends StatefulWidget {
   const IntakeHistoryScreen({super.key, this.embeddedInShell = false});
 
@@ -22,7 +22,7 @@ class IntakeHistoryScreen extends StatefulWidget {
 }
 
 class _IntakeHistoryScreenState extends State<IntakeHistoryScreen> {
-  /// 0 — 7 дней, 1 — 30 дней, 2 — без ограничения по дате.
+  /// 0 - 7 дней, 1 - 30 дней, 2 - без ограничения по дате.
   int _filterMode = 0;
 
   int? get _rangeDays => _filterMode == 0 ? 7 : (_filterMode == 1 ? 30 : null);

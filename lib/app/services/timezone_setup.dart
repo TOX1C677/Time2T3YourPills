@@ -18,7 +18,7 @@ Future<void> configureLocalTimeZone() async {
     try {
       tz.setLocalLocation(tz.getLocation('UTC'));
     } catch (_) {
-      // последний шанс — база уже инициализирована
+      // последний шанс - база уже инициализирована
     }
   }
 }

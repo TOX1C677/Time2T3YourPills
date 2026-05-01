@@ -9,7 +9,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-- **SQLite** (по умолчанию `DATABASE_URL`): при старте приложения вызывается `create_all` — таблицы создаются автоматически.
+- **SQLite** (по умолчанию `DATABASE_URL`): при старте приложения вызывается `create_all` - таблицы создаются автоматически.
 - **PostgreSQL**: таблицы создаются **только через Alembic** (`create_all` на старте не выполняется).
 
 ## Миграции Alembic

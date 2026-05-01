@@ -6,7 +6,7 @@ import 'app_screen_layout.dart';
 import 'app_typography.dart';
 
 abstract final class AppTheme {
-  /// Полный M3 [TextTheme] + наши размеры, затем один шрифт (Noto Sans) на **все** роли —
+  /// Полный M3 [TextTheme] + наши размеры, затем один шрифт (Noto Sans) на **все** роли -
   /// иначе у частичного [AppTypography.textTheme] пустые слоты остаются Roboto (Android).
   static TextTheme _resolvedTextTheme(
     ColorScheme scheme,

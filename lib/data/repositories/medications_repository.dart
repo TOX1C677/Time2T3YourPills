@@ -60,7 +60,7 @@ class MedicationsRepository {
     );
   }
 
-  /// Pull: если очередь пуста — можно подтянуть «сервер»; иначе не перетираем локальные правки.
+  /// Pull: если очередь пуста - можно подтянуть «сервер»; иначе не перетираем локальные правки.
   Future<List<Medication>> pullMergePreferLocal() async {
     final pending = await _outbox.readAll();
     if (pending.isNotEmpty) {

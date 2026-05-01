@@ -23,11 +23,11 @@ class TimerScreen extends StatefulWidget {
 }
 
 class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
-  /// null — ещё проверяем; true — уведомления разрешены; false — нет (показываем кнопку).
+  /// null - ещё проверяем; true - уведомления разрешены; false - нет (показываем кнопку).
   bool? _notificationAllowed;
   bool _notificationNeedsSettings = false;
 
-  /// Android: null — проверяем; true — не в списке оптимизации (или исключено).
+  /// Android: null - проверяем; true - не в списке оптимизации (или исключено).
   bool? _batteryOptimizationIgnored;
 
   @override
@@ -218,7 +218,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Часть телефонов замедляет работу в фоне. Исключите приложение из оптимизации батареи — так надёжнее дойдут напоминания и проверка пропуска.',
+                      'Часть телефонов замедляет работу в фоне. Исключите приложение из оптимизации батареи - так надёжнее дойдут напоминания и проверка пропуска.',
                       style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSecondaryContainer),
                     ),
                     SizedBox(height: layout.spaceM),
@@ -264,7 +264,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
             SizedBox(height: layout.spaceM),
           ],
           if (!intake.hasMedications) ...[
-            Text('Добавьте препараты на вкладке «Медикаменты» — интервал или график подтянется сюда автоматически.', style: theme.textTheme.bodyLarge),
+            Text('Добавьте препараты на вкладке «Медикаменты» - интервал или график подтянется сюда автоматически.', style: theme.textTheme.bodyLarge),
           ] else ...[
             if (intake.hasAnySchedule) ...[
               Text(
@@ -279,7 +279,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
               if (intake.isDue && intake.globalEarliestFuture != null) ...[
                 SizedBox(height: layout.spaceXs),
                 Text(
-                  'Пока приём не подтверждён, циферблат — время до ближайшего следующего слота (в том числе другие препараты).',
+                  'Пока приём не подтверждён, циферблат - время до ближайшего следующего слота (в том числе другие препараты).',
                   style: theme.textTheme.bodyMedium,
                   textAlign: TextAlign.start,
                 ),
@@ -303,7 +303,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
               ],
             ] else ...[
               Text(
-                'Укажите для препаратов интервал (минуты) или времена по графику (ЧЧ:ММ) — тогда появится обратный отсчёт.',
+                'Укажите для препаратов интервал (минуты) или времена по графику (ЧЧ:ММ) - тогда появится обратный отсчёт.',
                 style: theme.textTheme.bodyLarge,
               ),
             ],

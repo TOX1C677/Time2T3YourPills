@@ -25,7 +25,7 @@ class UiPreferencesController extends ChangeNotifier {
         notifyListeners();
         return;
       } catch (_) {
-        // офлайн или ошибка — читаем локально
+        // офлайн или ошибка - читаем локально
       }
     }
     final raw = await _store.read(StorageKeys.uiBoldFonts);

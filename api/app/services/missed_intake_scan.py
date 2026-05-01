@@ -23,7 +23,7 @@ def _as_utc(dt: datetime) -> datetime:
 
 
 def _patient_tz(profile: PatientProfile | None):
-    """ZoneInfo для IANA-имён; UTC без tzdata (Windows) — через datetime.UTC."""
+    """ZoneInfo для IANA-имён; UTC без tzdata (Windows) - через datetime.UTC."""
     name = (profile.timezone if profile else "") or "UTC"
     name = name.strip() or "UTC"
     if name.upper() in ("UTC", "GMT", "ETC/UTC"):

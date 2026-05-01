@@ -51,7 +51,7 @@ def send_missed_alert_emails(db: Session, alert_ids: list[UUID]) -> int:
 
     from_addr = (settings.smtp_from_email or settings.smtp_user or "").strip()
     if not from_addr:
-        logger.warning("SMTP: не задан smtp_from_email / smtp_user — пропуск отправки")
+        logger.warning("SMTP: не задан smtp_from_email / smtp_user - пропуск отправки")
         return 0
 
     delivered = 0
@@ -85,7 +85,7 @@ def send_missed_alert_emails(db: Session, alert_ids: list[UUID]) -> int:
             continue
 
         due_s = alert.due_at.astimezone(UTC).strftime("%Y-%m-%d %H:%M UTC")
-        subject = f"Time2T3: пропуск приёма — {med.name}"
+        subject = f"Time2T3: пропуск приёма - {med.name}"
         body = (
             f"Пациент: {pname}\n"
             f"Препарат: {med.name}\n"

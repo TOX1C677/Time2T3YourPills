@@ -88,7 +88,7 @@ class CaregiverScope extends ChangeNotifier {
           await _auth.logout();
         }
       }
-      // остальное (сеть) — оставляем предыдущий список
+      // остальное (сеть) - оставляем предыдущий список
     }
     notifyListeners();
   }

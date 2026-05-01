@@ -48,7 +48,7 @@ class NotificationService {
     await _android?.createNotificationChannel(channel);
   }
 
-  /// Запросить у Android 13+ уведомления и (где нужно) точные будильники — до zonedSchedule.
+  /// Запросить у Android 13+ уведомления и (где нужно) точные будильники - до zonedSchedule.
   Future<void> ensureAndroidSchedulePermissions() async {
     await _android?.requestNotificationsPermission();
     await _android?.requestExactAlarmsPermission();
@@ -156,7 +156,7 @@ class NotificationService {
     }
   }
 
-  /// [anchorLocal] — момент первого уведомления «пора принять»: +15 мин повтор пациенту, +30 мин текст + API с телефона.
+  /// [anchorLocal] - момент первого уведомления «пора принять»: +15 мин повтор пациенту, +30 мин текст + API с телефона.
   Future<void> scheduleReminderEscalations({
     required DateTime anchorLocal,
     required String medicationName,
@@ -207,7 +207,7 @@ class NotificationService {
         id: caregiverLocalNotificationId,
         title: 'Пропуск приёма',
         body:
-            'Пациент не ответил на напоминания. Опекуны получают запись в приложении; при настройке SMTP — письмо на почту.',
+            'Пациент не ответил на напоминания. Опекуны получают запись в приложении; при настройке SMTP - письмо на почту.',
         when: toTzLocal(caregiverAt),
         details: detailsInfo,
         payload: 'caregiver_escalation',
