@@ -67,14 +67,36 @@ class ApiRemoteDataSource implements RemoteSyncDataSource {
 
   @override
   Future<PatientProfile?> fetchPatient() async {
-    if (!_auth.isAuthenticated || _auth.role != 'patient') return null;
-    final res = await _auth.dio.get<Map<String, dynamic>>('/v1/patients/me/profile');
-    final m = res.data!;
-    return PatientProfile(
-      name: m['first_name'] as String? ?? '',
-      surname: m['last_name'] as String? ?? '',
-      updatedAt: m['updated_at'] != null ? DateTime.tryParse(m['updated_at'] as String) : null,
-    );
+    if (!_auth.isAuthenticated) return null;
+    if (_auth.role == 'patient') {
+      final res = await _auth.dio.get<Map<String, dynamic>>('/v1/patients/me/profile');
+      final m = res.data!;
+      return PatientProfile(
+        name: m['first_name'] as String? ?? '',
+        surname: m['last_name'] as String? ?? '',
+        updatedAt: m['updated_at'] != null ? DateTime.tryParse(m['updated_at'] as String) : null,
+      );
+    }
+    if (_auth.role == 'caregiver') {
+      final res = await _auth.dio.get<Map<String, dynamic>>('/v1/users/me');
+      return _patientProfileFromUserMe(res.data!);
+    }
+    return null;
+  }
+
+  /// Опекун: в БД только `users.display_name` (регистрация), без строки patient_profiles.
+  static PatientProfile _patientProfileFromUserMe(Map<String, dynamic> m) {
+    final dn = (m['display_name'] as String? ?? '').trim();
+    final email = (m['email'] as String? ?? '').trim();
+    if (dn.isEmpty) {
+      final short = email.contains('@') ? email.split('@').first : email;
+      return PatientProfile(name: short.isNotEmpty ? short : 'Опекун', surname: '');
+    }
+    final parts = dn.split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return PatientProfile(name: parts.first, surname: parts.sublist(1).join(' '));
+    }
+    return PatientProfile(name: dn, surname: '');
   }
 
   Future<void> _putMedication(Medication m) async {
@@ -139,6 +161,17 @@ class ApiRemoteDataSource implements RemoteSyncDataSource {
     );
   }
 
+  Future<void> _patchCaregiverDisplayName(Map<String, Object?> map) async {
+    final name = (map['name'] as String? ?? '').trim();
+    final surname = (map['surname'] as String? ?? '').trim();
+    final parts = <String>[name, surname].where((s) => s.isNotEmpty);
+    final displayName = parts.join(' ').trim();
+    await _auth.dio.patch<Map<String, dynamic>>(
+      '/v1/users/me',
+      data: {'display_name': displayName},
+    );
+  }
+
   @override
   Future<void> applyOutboxEntries(List<OutboxEntry> entries) async {
     if (!_auth.isAuthenticated) return;
@@ -154,9 +187,12 @@ class ApiRemoteDataSource implements RemoteSyncDataSource {
           await _deleteMedication(id);
         }
       } else if (e.type == 'patient_upsert') {
-        if (_auth.role != 'patient') continue;
         final map = Map<String, Object?>.from(jsonDecode(e.payloadJson) as Map);
-        await _patchPatientProfile(map);
+        if (_auth.role == 'patient') {
+          await _patchPatientProfile(map);
+        } else if (_auth.role == 'caregiver') {
+          await _patchCaregiverDisplayName(map);
+        }
       } else if (e.type == 'intake_event') {
         if (_auth.role != 'patient') continue;
         final map = Map<String, dynamic>.from(jsonDecode(e.payloadJson) as Map);

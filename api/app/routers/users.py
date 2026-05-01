@@ -24,6 +24,9 @@ def patch_me(
 ) -> User:
     if body.ui_bold_fonts is not None:
         user.ui_bold_fonts = body.ui_bold_fonts
+    if body.display_name is not None:
+        user.display_name = body.display_name.strip()
+    if body.ui_bold_fonts is not None or body.display_name is not None:
         db.add(user)
     db.commit()
     db.refresh(user)

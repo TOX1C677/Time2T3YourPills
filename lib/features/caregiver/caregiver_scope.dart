@@ -42,7 +42,10 @@ class CaregiverScope extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refreshFromApi() async {
+  /// [revokeSessionOnUnauthorized]: при 401 вызвать [AuthSession.logout] (инвалидация refresh на сервере).
+  /// После свежего `login`/`register` передавайте `false`: иначе любой ложный/граничный 401 на
+  /// `GET /v1/caregiver/patients` сотрёт только что выданные токены и «вход» не удастся.
+  Future<void> refreshFromApi({bool revokeSessionOnUnauthorized = false}) async {
     if (_auth.role != 'caregiver' || !_auth.isAuthenticated) {
       clear();
       return;
@@ -60,11 +63,12 @@ class CaregiverScope extends ChangeNotifier {
         _selectedPatientUserId = list.isNotEmpty ? list.first.patientUserId : null;
       }
     } catch (e) {
-      // 401: просрочен refresh, другой JWT_SECRET на проде, токены от локального API и т.д.
       final code = e is DioException ? e.response?.statusCode : null;
       if (code == 401) {
         clear();
-        await _auth.logout();
+        if (revokeSessionOnUnauthorized) {
+          await _auth.logout();
+        }
       }
       // остальное (сеть) — оставляем предыдущий список
     }

@@ -38,6 +38,28 @@ def test_patch_ui_bold_fonts(client):
     assert r2.json()["ui_bold_fonts"] is True
 
 
+def test_patch_display_name_caregiver(client):
+    reg = client.post(
+        "/v1/auth/register",
+        json={
+            "email": "dn@example.com",
+            "password": "secret12",
+            "display_name": "Old Name",
+            "role": "caregiver",
+        },
+    ).json()
+    tok = reg["access_token"]
+    r = client.patch(
+        "/v1/users/me",
+        headers=_headers(tok),
+        json={"display_name": "Иван Петров"},
+    )
+    assert r.status_code == 200
+    assert r.json()["display_name"] == "Иван Петров"
+    r2 = client.get("/v1/users/me", headers=_headers(tok))
+    assert r2.json()["display_name"] == "Иван Петров"
+
+
 def test_me_requires_auth(client):
     assert client.get("/v1/users/me").status_code == 401
 

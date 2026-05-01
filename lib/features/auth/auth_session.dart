@@ -7,14 +7,7 @@ import '../../app/config/app_env.dart';
 /// Сессия API: JWT и роль. Уведомляет [GoRouter] через [refreshListenable].
 class AuthSession extends ChangeNotifier {
   AuthSession() {
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: AppEnv.apiBaseUrl.replaceAll(RegExp(r'/$'), ''),
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 20),
-        headers: {'Content-Type': 'application/json'},
-      ),
-    );
+    _dio = Dio(AppEnv.dioBaseOptions);
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
@@ -104,10 +97,14 @@ class AuthSession extends ChangeNotifier {
   }
 
   void _applyTokenResponse(Map<String, dynamic> json) {
-    _accessToken = json['access_token'] as String?;
-    _refreshToken = json['refresh_token'] as String?;
-    _role = json['role'] as String?;
-    _email = json['email'] as String?;
+    final access = json['access_token'];
+    final refresh = json['refresh_token'];
+    final role = json['role'];
+    final email = json['email'];
+    _accessToken = access is String ? access : access?.toString();
+    _refreshToken = refresh is String ? refresh : refresh?.toString();
+    _role = role is String ? role : role?.toString();
+    _email = email is String ? email : email?.toString();
   }
 
   Future<void> login({required String email, required String password}) async {
@@ -146,14 +143,7 @@ class AuthSession extends ChangeNotifier {
     if (rt == null || rt.isEmpty) {
       throw StateError('No refresh token');
     }
-    final plain = Dio(
-      BaseOptions(
-        baseUrl: _dio.options.baseUrl,
-        connectTimeout: _dio.options.connectTimeout,
-        receiveTimeout: _dio.options.receiveTimeout,
-        headers: {'Content-Type': 'application/json'},
-      ),
-    );
+    final plain = Dio(AppEnv.dioBaseOptions);
     final res = await plain.post<Map<String, dynamic>>(
       '/v1/auth/refresh',
       data: {'refresh_token': rt},

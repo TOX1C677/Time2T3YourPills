@@ -34,8 +34,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     Future.microtask(() async {
       if (!mounted) return;
+      final auth = context.read<AuthSession>();
       final c = context.read<PatientController>();
+      final app = context.read<AppServices>();
       await c.load();
+      if (auth.role == 'caregiver') {
+        try {
+          await app.syncRemoteNow();
+        } catch (_) {}
+        if (!mounted) return;
+        await c.load();
+      }
       final p = c.profile;
       if (!mounted) return;
       if (p != null) {
@@ -315,7 +324,7 @@ class _LinkPatientByCodeDialogState extends State<_LinkPatientByCodeDialog> {
               await auth.linkPatientByToken(_token.text);
               if (context.mounted) Navigator.pop(context);
               if (!widget.parentContext.mounted) return;
-              await cg.refreshFromApi();
+              await cg.refreshFromApi(revokeSessionOnUnauthorized: false);
               if (!widget.parentContext.mounted) return;
               try {
                 await app.syncRemoteNow();

@@ -41,6 +41,7 @@ class UserMeOut(BaseModel):
 
 class UserSelfPatch(BaseModel):
     ui_bold_fonts: bool | None = None
+    display_name: str | None = Field(default=None, max_length=200)
 
 
 class PatientProfileOut(BaseModel):

@@ -252,9 +252,9 @@ Worker раз в N минут сравнивает `next_due` / расписан
 |--------|--------|
 | `MockRemoteDataSource` | `ApiRemoteDataSource` + интерфейс `RemoteDataSource` |
 | `MedicationsRepository`, `PatientRepository` | те же имена, внутри — REST + локальный кэш (GetStorage) как сейчас |
-| `AppServices` | добавить `AuthRepository`, `ApiClient` (dio + baseUrl из env/flavor) |
+| `AppServices` | добавить `AuthRepository`, `ApiClient` (dio + `baseUrl` из `AppEnv`, только прод) |
 
-**Конфигурация:** `--dart-define=API_BASE_URL=https://api...` для release-сборки.
+**Конфигурация:** базовый URL API — константа в `lib/app/config/app_env.dart` (`https://api.anti-toxic.ru`).
 
 ### 7.2. Маршрутизация (`app_router.dart`)
 

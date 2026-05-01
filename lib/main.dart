@@ -39,6 +39,7 @@ Future<void> main() async {
   await auth.restore();
 
   final caregiverScope = CaregiverScope(auth);
+  // Единственный удалённый слой к прод-API (`AppEnv` + `AuthSession.dio`); не Web, только Android.
   final remote = ApiRemoteDataSource(
     auth,
     activeCaregiverPatientId: () => caregiverScope.selectedPatientUserId,
@@ -53,7 +54,7 @@ Future<void> main() async {
 
   if (auth.isAuthenticated) {
     try {
-      await caregiverScope.refreshFromApi();
+      await caregiverScope.refreshFromApi(revokeSessionOnUnauthorized: true);
       if (auth.role == 'caregiver') {
         await caregiverScope.refreshMissedAlertsCount();
       }

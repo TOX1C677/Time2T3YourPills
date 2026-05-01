@@ -25,5 +25,5 @@ description: Специалист по проекту Time2T3 Your Pills (Flutte
 ## Выход
 
 - Кратко что сделано и где (пути файлов).
-- Если трогал API — как проверить (curl / Swagger `http://127.0.0.1:8000/docs` или тест).
-- Для Flutter — `dart-define=API_BASE_URL` при отличии от `http://127.0.0.1:8000` (для эмулятора Android часто `http://10.0.2.2:8000`).
+- Если трогал API — как проверить (curl / Swagger локально или `https://api.anti-toxic.ru/docs`, или тест).
+- Flutter-клиент ходит только на **`https://api.anti-toxic.ru`** (`lib/app/config/app_env.dart`), без `dart-define` и без локального URL в приложении.

@@ -59,7 +59,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       await app.clearUserBoundLocalCache();
       if (!mounted) return;
-      await caregiver.refreshFromApi();
+      await caregiver.refreshFromApi(revokeSessionOnUnauthorized: false);
       if (!mounted) return;
       try {
         await app.syncRemoteNow();
