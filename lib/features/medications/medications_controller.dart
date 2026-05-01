@@ -19,13 +19,26 @@ class MedicationsController extends ChangeNotifier {
     await _intakeTimer.refreshFromMedications();
   }
 
+  /// Подтянуть с сервера при пустой outbox-очереди (см. [MedicationsRepository.pullMergePreferLocal]).
+  Future<void> refreshFromServer() async {
+    _items = await _services.medications.pullMergePreferLocal();
+    notifyListeners();
+    await _intakeTimer.refreshFromMedications();
+  }
+
   Future<void> upsert(Medication medication) async {
     await _services.medications.upsertLocalEnqueue(medication);
+    try {
+      await _services.syncRemoteNow();
+    } catch (_) {}
     await load();
   }
 
   Future<void> removeById(String id) async {
     await _services.medications.deleteLocalEnqueue(id);
+    try {
+      await _services.syncRemoteNow();
+    } catch (_) {}
     await load();
   }
 }

@@ -38,13 +38,13 @@
 | `androidx.constraintlayout:constraintlayout` | 2.1.4 | только импорт TAG в `MedicationFragment` / `MedicationViewModel` (ошибочный импорт) |
 | `androidx.lifecycle:lifecycle-viewmodel` | 2.4.1 | да |
 | `androidx.lifecycle:lifecycle-livedata` | 2.6.2 | да |
-| `com.google.firebase:firebase-firestore` | 24.8.1 | **нет** — в исходниках не используется |
+| `com.google.firebase:firebase-firestore` | 24.8.1 | **нет** - в исходниках не используется |
 | `io.reactivex.rxjava3:rxjava` / `rxandroid` | 3.1.0 / 3.0.0 | **нет** |
 | JUnit / AndroidX Test / Espresso | тесты | шаблонные тесты |
 
 **Замечания по Gradle:** в конце `app/build.gradle` дублируется `apply plugin: 'com.android.application'` при уже объявленном `plugins { id 'com.android.application' }`.
 
-**Отсутствует в явных зависимостях:** `androidx.localbroadcastmanager:localbroadcastmanager` — при этом в коде активно используется `LocalBroadcastManager` (нужна либо явная зависимость, либо замена на другой канал связи).
+**Отсутствует в явных зависимостях:** `androidx.localbroadcastmanager:localbroadcastmanager` - при этом в коде активно используется `LocalBroadcastManager` (нужна либо явная зависимость, либо замена на другой канал связи).
 
 ---
 
@@ -53,9 +53,9 @@
 **Файл:** `app/src/main/AndroidManifest.xml`
 
 - Разрешение: `POST_NOTIFICATIONS`.
-- `MainActivity` — launcher, `exported=true`.
-- `TimerService` — фоновый сервис таймера.
-- BroadcastReceivers: `ConfirmReceiver`, `SnoozeReceiver` (без `intent-filter` в манифесте — вызываются через `PendingIntent` / явный `Intent` где применимо).
+- `MainActivity` - launcher, `exported=true`.
+- `TimerService` - фоновый сервис таймера.
+- BroadcastReceivers: `ConfirmReceiver`, `SnoozeReceiver` (без `intent-filter` в манифесте - вызываются через `PendingIntent` / явный `Intent` где применимо).
 - Тема: `Theme.Time2T3YourPills`, backup/data extraction rules.
 
 ---
@@ -79,7 +79,7 @@ MainActivity
 
 Стартовый экран при первом запуске: `TimerFragment`.
 
-**Навигация:** `FragmentTransaction.replace` без back stack — при переключении вкладок состояние фрагментов не сохраняется стандартным способом.
+**Навигация:** `FragmentTransaction.replace` без back stack - при переключении вкладок состояние фрагментов не сохраняется стандартным способом.
 
 ---
 
@@ -104,13 +104,13 @@ MainActivity
 - `RecyclerView` + `MedicationAdapter` (ListAdapter + DiffUtil).
 - Поля: название, доза, таймер (минуты), число повторов; кнопка «Add Medication».
 - При добавлении: валидация непустых полей → `insertOrUpdate` → обновление `SharedViewModel` и `startService` с action `SET_TIMER_VALUE`.
-- Наблюдение за `getAllMedications()`: **всегда подставляет в форму последний элемент списка** и подписывается на `getCurrentMedication` по его id — логика «текущего» препарата привязана к последней записи, а не к выбору из списка.
+- Наблюдение за `getAllMedications()`: **всегда подставляет в форму последний элемент списка** и подписывается на `getCurrentMedication` по его id - логика «текущего» препарата привязана к последней записи, а не к выбору из списка.
 
 ### 6.4 PatientFragment
 
 - Поля: имя, «middle name», заметки; Save.
-- `UserViewModel.getUser()` — один пользователь из БД.
-- `loadUser(userId)` из `arguments` реализован, но **нигде не передаётся `setArguments`** при навигации — ветка фактически мёртвая.
+- `UserViewModel.getUser()` - один пользователь из БД.
+- `loadUser(userId)` из `arguments` реализован, но **нигде не передаётся `setArguments`** при навигации - ветка фактически мёртвая.
 - Сохранение: `insertOrUpdateUser` с callback (логирование успеха/ошибки); Toast для пользователя по сохранению **не показывается** (в отличие от пустых полей в других местах).
 
 ### 6.5 AboutFragment
@@ -124,7 +124,7 @@ MainActivity
 
 | Класс | Базовый класс | Scope | Роль |
 |-------|---------------|-------|------|
-| `SharedViewModel` | `AndroidViewModel` | Activity | `MutableLiveData<Long>` таймер; `MutableLiveData<Integer>` repeat — repeat почти не заполняется извне; регистрация receiver на LBM в конструкторе |
+| `SharedViewModel` | `AndroidViewModel` | Activity | `MutableLiveData<Long>` таймер; `MutableLiveData<Integer>` repeat - repeat почти не заполняется извне; регистрация receiver на LBM в конструкторе |
 | `MedicationViewModel` | `AndroidViewModel` | Fragment | Обёртка над `MedicationRepository`; `getCurrentMedication(id)` кэширует один `LiveData` на первый вызов (потенциальная ошибка при смене id) |
 | `UserViewModel` | `AndroidViewModel` | Fragment | `getUser()`, `getNotes()` через `Transformations.switchMap`, `getUserById`, `insertOrUpdateUser` |
 
@@ -138,13 +138,13 @@ MainActivity
 
 - Источник: Room (`MedicationDao`).
 - Асинхронность: **устаревший `AsyncTask`** для insert/update.
-- Методы: `getAllMedications`, `getMedicationById` (LiveData), `getMedicationByIdSync`, `insert`, `update`, `insertOrUpdate` (не используется из ViewModel напрямую — ViewModel дублирует логику insert/update).
+- Методы: `getAllMedications`, `getMedicationById` (LiveData), `getMedicationByIdSync`, `insert`, `update`, `insertOrUpdate` (не используется из ViewModel напрямую - ViewModel дублирует логику insert/update).
 
 ### 8.2 UserRepository
 
 - `UserDao`, `NoteDao`, `Executor` single-thread.
-- `getUser`, `getUserById`, `getNotes`, `insertOrUpdateUser` (сравнение с `getUserSync` — один глобальный «текущий» пользователь).
-- `insertOrUpdateNote` — в UI не вызывается; заметки пользователя в форме **не редактируются** — в `User` есть поле `notes` как один текст, а сущность `Note` — отдельная таблица.
+- `getUser`, `getUserById`, `getNotes`, `insertOrUpdateUser` (сравнение с `getUserSync` - один глобальный «текущий» пользователь).
+- `insertOrUpdateNote` - в UI не вызывается; заметки пользователя в форме **не редактируются** - в `User` есть поле `notes` как один текст, а сущность `Note` - отдельная таблица.
 
 ---
 
@@ -154,13 +154,13 @@ MainActivity
 
 - Имя файла БД: `app_database`.
 - Версия схемы: **8**.
-- `fallbackToDestructiveMigration()` — при смене версии данные стираются.
+- `fallbackToDestructiveMigration()` - при смене версии данные стираются.
 - `exportSchema = false`.
 
 **Сущности:**
 
 1. **Medication** (`medication_table`)  
-   - `@PrimaryKey` `String id` — по умолчанию `UUID.randomUUID()` в поле объекта.  
+   - `@PrimaryKey` `String id` - по умолчанию `UUID.randomUUID()` в поле объекта.  
    - `name`, `dosage`, `timer` (long, **минуты** в бизнес-логике сервиса умножаются на 60×1000), `repetitions` (int).
 
 2. **User** (`user_table`)  
@@ -191,9 +191,9 @@ MainActivity
 
 **Загрузка настроек:**
 
-- В `onCreate`: `AsyncTask` → `getMedicationByIdSync("YOUR_MEDICATION_ID")` — **заглушка**, не реальный id.
-- `onStartCommand`: `updateTimerSettings("YOUR_MEDICATION_ID")` — снова заглушка.
-- Поддержка `SET_TIMER_VALUE` из Intent — выставляет `duration` в мс.
+- В `onCreate`: `AsyncTask` → `getMedicationByIdSync("YOUR_MEDICATION_ID")` - **заглушка**, не реальный id.
+- `onStartCommand`: `updateTimerSettings("YOUR_MEDICATION_ID")` - снова заглушка.
+- Поддержка `SET_TIMER_VALUE` из Intent - выставляет `duration` в мс.
 - `ACTION_CONFIRM`: сброс уведомления, перезапуск цикла через `startTimerFromService()`.
 - **`ACTION_SNOOZE` в коде сервиса не обрабатывается** (есть только в `SnoozeReceiver`, который шлёт action в сервис).
 
@@ -211,7 +211,7 @@ MainActivity
 
 - Канал O+: `medication_reminder_channel`.
 - Действие «Confirm» → `PendingIntent` → `ConfirmReceiver` → `startService` с `ACTION_CONFIRM`.
-- **Ресурсы:** `R.drawable.ic_confirm`, `R.drawable.ic_notification` — в каталоге `res/drawable` **отсутствуют** (см. раздел 13).
+- **Ресурсы:** `R.drawable.ic_confirm`, `R.drawable.ic_notification` - в каталоге `res/drawable` **отсутствуют** (см. раздел 13).
 
 ---
 
@@ -219,18 +219,18 @@ MainActivity
 
 **MedicationAdapter** (`ListAdapter` + `MedicationDiffCallback`):
 
-- `onBindViewHolder` **полностью закомментирован** — элементы списка визуально пустые.
-- `MedicationDiffCallback.areItemsTheSame`: сравнение `oldItem.getId() == newItem.getId()` для **String** — логическая ошибка (нужно `Objects.equals`); DiffUtil может работать некорректно.
+- `onBindViewHolder` **полностью закомментирован** - элементы списка визуально пустые.
+- `MedicationDiffCallback.areItemsTheSame`: сравнение `oldItem.getId() == newItem.getId()` для **String** - логическая ошибка (нужно `Objects.equals`); DiffUtil может работать некорректно.
 
-**MedicationViewHolder:** ожидает id `medication_name`, `dosage`, `timer`, `repeat_count` в **item layout** — в `medication_list_item.xml` эти TextView **закомментированы**, контейнер по сути пустой.
+**MedicationViewHolder:** ожидает id `medication_name`, `dosage`, `timer`, `repeat_count` в **item layout** - в `medication_list_item.xml` эти TextView **закомментированы**, контейнер по сути пустой.
 
 ---
 
 ## 13. Ресурсы (ресурсный долг)
 
-**Меню:** `bottom_nav_menu.xml` ссылается на `@drawable/ic_timer`, `ic_medication`, `ic_patient`, `ic_about` — **файлов нет** в репозитории (в `drawable` только launcher и `kreis.xml`).
+**Меню:** `bottom_nav_menu.xml` ссылается на `@drawable/ic_timer`, `ic_medication`, `ic_patient`, `ic_about` - **файлов нет** в репозитории (в `drawable` только launcher и `kreis.xml`).
 
-**Уведомления:** см. выше — нет `ic_confirm`, `ic_notification`.
+**Уведомления:** см. выше - нет `ic_confirm`, `ic_notification`.
 
 Итог: проект в текущем виде с высокой вероятностью **не соберётся** или потребует недостающих vector/png и исправления ссылок.
 
@@ -245,7 +245,7 @@ MainActivity
 
 ## 15. Тестирование
 
-- `ExampleUnitTest` / `ExampleInstrumentedTest` — шаблоны, **не покрывают** бизнес-логику.
+- `ExampleUnitTest` / `ExampleInstrumentedTest` - шаблоны, **не покрывают** бизнес-логику.
 
 ---
 
@@ -292,15 +292,15 @@ PatientFragment → UserViewModel → UserRepository → Room (User; Note API н
 
 ## 18. Ключевые риски и технический долг (для миграции)
 
-1. Заглушка `YOUR_MEDICATION_ID` — нет связи «выбранный препарат ↔ таймер».
+1. Заглушка `YOUR_MEDICATION_ID` - нет связи «выбранный препарат ↔ таймер».
 2. Дублирование bind к сервису в Activity и TimerFragment.
 3. `SharedViewModel` держит BroadcastReceiver + дублирование с MainActivity.
-4. Firebase / RxJava — мёртвый вес зависимостей.
-5. `MedicationViewModel.getCurrentMedication` — кэш LiveData на один id.
+4. Firebase / RxJava - мёртвый вес зависимостей.
+5. `MedicationViewModel.getCurrentMedication` - кэш LiveData на один id.
 6. Список препаратов не отображает данные; DiffUtil с `==` для String id.
 7. Отсутствующие drawable и возможно LBM dependency.
-8. `SnoozeReceiver` / `ACTION_SNOOZE` — незавершённая цепочка.
-9. Заметки `Note` vs поле `notes` у User — непрояснённая доменная модель.
+8. `SnoozeReceiver` / `ACTION_SNOOZE` - незавершённая цепочка.
+9. Заметки `Note` vs поле `notes` у User - непрояснённая доменная модель.
 10. Нет foreground service / типа для долгой фоновой работы на новых версиях Android (политика ОС).
 
 ---
@@ -320,4 +320,4 @@ PatientFragment → UserViewModel → UserRepository → Room (User; Note API н
 
 ---
 
-*Конец слепка. План миграции на Flutter — в отдельном файле `FLUTTER_MIGRATION_PLAN.md`.*
+*Конец слепка. План миграции на Flutter - в отдельном файле `FLUTTER_MIGRATION_PLAN.md`.*

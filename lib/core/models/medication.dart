@@ -10,6 +10,7 @@ class Medication {
     required this.reminderMode,
     this.intervalMinutes,
     this.slotTimes = const [],
+    this.firstIntakeHm,
     this.updatedAt,
   });
 
@@ -19,6 +20,8 @@ class Medication {
   final ReminderMode reminderMode;
   final int? intervalMinutes;
   final List<String> slotTimes;
+  /// Локальное время первого приёма «ЧЧ:ММ» (интервал и график).
+  final String? firstIntakeHm;
   final DateTime? updatedAt;
 
   Medication copyWith({
@@ -28,6 +31,7 @@ class Medication {
     ReminderMode? reminderMode,
     int? intervalMinutes,
     List<String>? slotTimes,
+    String? firstIntakeHm,
     DateTime? updatedAt,
   }) {
     return Medication(
@@ -37,21 +41,27 @@ class Medication {
       reminderMode: reminderMode ?? this.reminderMode,
       intervalMinutes: intervalMinutes ?? this.intervalMinutes,
       slotTimes: slotTimes ?? this.slotTimes,
+      firstIntakeHm: firstIntakeHm ?? this.firstIntakeHm,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
-  Map<String, Object?> toJson() => {
-        'id': id,
-        'name': name,
-        'dosage': dosage,
-        'reminderMode': reminderMode.storageValue,
-        'intervalMinutes': intervalMinutes,
-        'slotTimes': slotTimes,
-        'updatedAt': updatedAt?.toUtc().toIso8601String(),
-      };
+  Map<String, Object?> toJson() {
+    final f = firstIntakeHm;
+    return {
+      'id': id,
+      'name': name,
+      'dosage': dosage,
+      'reminderMode': reminderMode.storageValue,
+      'intervalMinutes': intervalMinutes,
+      'slotTimes': slotTimes,
+      if (f != null && f.isNotEmpty) 'firstIntakeHm': f,
+      'updatedAt': updatedAt?.toUtc().toIso8601String(),
+    };
+  }
 
   static Medication fromJson(Map<String, Object?> json) {
+    final firstRaw = json['firstIntakeHm'] ?? json['first_intake_time'];
     return Medication(
       id: json['id'] as String,
       name: json['name'] as String? ?? '',
@@ -59,6 +69,7 @@ class Medication {
       reminderMode: ReminderMode.fromStorage(json['reminderMode'] as String?),
       intervalMinutes: (json['intervalMinutes'] as num?)?.toInt(),
       slotTimes: (json['slotTimes'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+      firstIntakeHm: firstRaw is String && firstRaw.isNotEmpty ? firstRaw : null,
       updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt'] as String) : null,
     );
   }

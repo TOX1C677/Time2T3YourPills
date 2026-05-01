@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: time2t3_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: time2t3
+      POSTGRES_PASSWORD: time2t3
+      POSTGRES_DB: time2t3
+    ports:
+      - "5432:5432"
+    volumes:
+      - time2t3_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U time2t3 -d time2t3"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  time2t3_pgdata:

@@ -6,14 +6,16 @@ import '../../app/storage/storage_keys.dart';
 import '../../core/models/medication.dart';
 import '../../core/models/reminder_mode.dart';
 import '../../core/services/intake_schedule.dart';
+import 'intake_reminder_escalation.dart';
 import 'intake_timer_state.dart';
 
-/// Таймер по всем препаратам: на экране — до ближайшего приёма; у каждого свой nextDue; уведомление по ближайшему событию.
+/// Таймер по всем препаратам: на экране - до ближайшего приёма; у каждого свой nextDue; уведомление по ближайшему событию.
 class IntakeTimerController extends ChangeNotifier {
   IntakeTimerController(this._services);
 
   final AppServices _services;
   Timer? _ticker;
+  int _caregiverEscalationClock = 0;
 
   List<Medication> _medications = [];
   Map<String, DateTime> _nextDue = {};
@@ -22,7 +24,7 @@ class IntakeTimerController extends ChangeNotifier {
 
   List<Medication> get medications => List.unmodifiable(_medications);
 
-  /// Препараты с валидным nextDue — от ближайшего приёма к более позднему.
+  /// Препараты с валидным nextDue - от ближайшего приёма к более позднему.
   List<Medication> get medicationsSortedByNextDue {
     final list = List<Medication>.from(_medications);
     list.sort((a, b) {
@@ -56,10 +58,10 @@ class IntakeTimerController extends ChangeNotifier {
     return best;
   }
 
-  /// Есть препараты в списке (включая «по графику») — экран таймера не в режиме онбординга.
+  /// Есть препараты в списке (включая «по графику») - экран таймера не в режиме онбординга.
   bool get hasMedications => _medications.isNotEmpty;
 
-  /// Есть хотя бы один рассчитанный следующий приём — показываем обратный отсчёт и уведомления.
+  /// Есть хотя бы один рассчитанный следующий приём - показываем обратный отсчёт и уведомления.
   bool get hasAnySchedule => _nextDue.isNotEmpty;
 
   bool get isDue {
@@ -73,7 +75,7 @@ class IntakeTimerController extends ChangeNotifier {
     if (e == null) return null;
     if (!e.isAfter(now)) {
       // Есть просрочка: большой таймер показывает время до ближайшего будущего слота (другие препараты),
-      // пока текущий(е) просроченный(е) ждут «Принял» / +15 мин — их _nextDue не сдвигаем.
+      // пока текущий(е) просроченный(е) ждут «Принял» / +15 мин - их _nextDue не сдвигаем.
       final future = _earliestStrictlyFuture(now);
       if (future != null) {
         final diff = future.difference(now);
@@ -174,6 +176,15 @@ class IntakeTimerController extends ChangeNotifier {
     for (final id in ids) {
       final m = _medById(id);
       if (m == null) continue;
+      final due = _nextDue[id];
+      if (due != null) {
+        await _services.recordIntakeConfirmed(
+          medicationId: id,
+          scheduledAt: due,
+          medicationName: m.name,
+          dosage: m.dosage,
+        );
+      }
       if (m.reminderMode == ReminderMode.fixedInterval && m.intervalMinutes != null && m.intervalMinutes! > 0) {
         _nextDue[id] = now.add(Duration(minutes: m.intervalMinutes!));
       } else {
@@ -211,6 +222,46 @@ class IntakeTimerController extends ChangeNotifier {
     return _idsAtInstant(t);
   }
 
+  bool _isEscalationStillPending(IntakeReminderEscalation esc) {
+    final t = _focusOverdueInstant();
+    if (t == null) return false;
+    if (!IntakeSchedule.sameInstant(t, esc.overdueInstant, toleranceMs: 120000)) return false;
+    final atDue = _idsAtInstant(t).toSet();
+    for (final id in esc.medicationIds) {
+      if (!atDue.contains(id)) return false;
+    }
+    return true;
+  }
+
+  Future<void> _maybeFireCaregiverEscalation() async {
+    _caregiverEscalationClock++;
+    if (_caregiverEscalationClock % 5 != 0) return;
+
+    final raw = await _services.store.read(StorageKeys.intakeReminderEscalationJson);
+    final esc = IntakeReminderEscalation.tryParse(raw);
+    if (esc == null || esc.caregiverApiSent) return;
+    if (DateTime.now().isBefore(esc.caregiverNotifyAt)) return;
+    if (!_isEscalationStillPending(esc)) {
+      await _services.store.remove(StorageKeys.intakeReminderEscalationJson);
+      return;
+    }
+    final items = <Map<String, String>>[];
+    for (final id in esc.medicationIds) {
+      final due = esc.dueAtIsoUtcByMedId[id];
+      if (due != null) {
+        items.add({'medication_id': id, 'due_at': due});
+      }
+    }
+    if (items.isEmpty) return;
+    try {
+      await _services.notifyReminderEscalationToCaregivers(items);
+      await _services.store.write(
+        StorageKeys.intakeReminderEscalationJson,
+        esc.copyWith(sent: true).toJsonString(),
+      );
+    } catch (_) {}
+  }
+
   Future<void> _persistAndReschedule() async {
     final state = IntakeTimerState(
       nextDueById: _nextDue,
@@ -220,7 +271,10 @@ class IntakeTimerController extends ChangeNotifier {
     await _services.store.write(StorageKeys.intakeTimerStateJson, state.toJsonString());
 
     await _services.notifications.cancelTimerEnd();
-    if (_nextDue.isEmpty) return;
+    if (_nextDue.isEmpty) {
+      await _services.store.remove(StorageKeys.intakeReminderEscalationJson);
+      return;
+    }
 
     final now = DateTime.now();
     final futureEarliest = _earliestStrictlyFuture(now);
@@ -240,21 +294,31 @@ class IntakeTimerController extends ChangeNotifier {
       } else {
         scheduleAt = nag;
         final overT = _focusOverdueInstant();
-        if (overT == null) return;
+        if (overT == null) {
+          await _services.store.remove(StorageKeys.intakeReminderEscalationJson);
+          return;
+        }
         ids = _idsAtInstant(overT);
       }
     } else if (hasOverdue) {
       final overT = _focusOverdueInstant();
-      if (overT == null) return;
+      if (overT == null) {
+        await _services.store.remove(StorageKeys.intakeReminderEscalationJson);
+        return;
+      }
       scheduleAt = now.add(const Duration(seconds: 3));
       ids = _idsAtInstant(overT);
     } else {
+      await _services.store.remove(StorageKeys.intakeReminderEscalationJson);
       return;
     }
 
-    if (ids.isEmpty) return;
+    if (ids.isEmpty) {
+      await _services.store.remove(StorageKeys.intakeReminderEscalationJson);
+      return;
+    }
 
-    // AlarmManager на части устройств не принимает время «прямо сейчас» — сдвигаем на пару секунд вперёд.
+    // AlarmManager на части устройств не принимает время «прямо сейчас» - сдвигаем на пару секунд вперёд.
     var when = scheduleAt;
     if (!when.isAfter(now.add(const Duration(seconds: 2)))) {
       when = now.add(const Duration(seconds: 3));
@@ -279,11 +343,34 @@ class IntakeTimerController extends ChangeNotifier {
       whenLocal: when,
       medicationName: title,
     );
+
+    final overdueInstantForEscalation = hasOverdue ? _focusOverdueInstant()! : scheduleAt;
+    final dueMap = <String, String>{};
+    for (final id in ids) {
+      final d = _nextDue[id];
+      if (d != null) {
+        dueMap[id] = d.toUtc().toIso8601String();
+      }
+    }
+    final esc = IntakeReminderEscalation(
+      anchorLocal: when,
+      overdueInstant: overdueInstantForEscalation,
+      medicationIds: List<String>.from(ids),
+      dueAtIsoUtcByMedId: dueMap,
+    );
+    await _services.store.write(StorageKeys.intakeReminderEscalationJson, esc.toJsonString());
+    await _services.notifications.scheduleReminderEscalations(
+      anchorLocal: when,
+      medicationName: title,
+    );
   }
 
   void _startTicker() {
     _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => notifyListeners());
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      notifyListeners();
+      unawaited(_maybeFireCaregiverEscalation());
+    });
   }
 
   @override
