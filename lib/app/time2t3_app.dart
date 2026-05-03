@@ -25,7 +25,7 @@ class Time2T3App extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      title: 'Время принять таблетки',
+      title: 'TimeToTake',
       theme: AppTheme.light(refLayout, boldFonts: bold),
       darkTheme: AppTheme.dark(refLayout, boldFonts: bold),
       themeMode: ThemeMode.system,

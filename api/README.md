@@ -1,4 +1,4 @@
-# Time2T3 API (FastAPI)
+# TimeToTake API (FastAPI)
 
 ## Запуск
 

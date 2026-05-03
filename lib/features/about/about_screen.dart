@@ -14,7 +14,7 @@ class AboutScreen extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.all(layout.spaceM),
         children: [
-          Text('Time2T3 Your Pills', style: theme.textTheme.titleLarge),
+          Text('TimeToTake', style: theme.textTheme.titleLarge),
           SizedBox(height: layout.spaceS),
           Text('Версия 1.0.0', style: theme.textTheme.bodyLarge),
           SizedBox(height: layout.spaceL),

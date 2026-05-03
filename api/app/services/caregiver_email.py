@@ -85,13 +85,13 @@ def send_missed_alert_emails(db: Session, alert_ids: list[UUID]) -> int:
             continue
 
         due_s = alert.due_at.astimezone(UTC).strftime("%Y-%m-%d %H:%M UTC")
-        subject = f"Time2T3: пропуск приёма - {med.name}"
+        subject = f"TimeToTake: пропуск приёма - {med.name}"
         body = (
             f"Пациент: {pname}\n"
             f"Препарат: {med.name}\n"
             f"Ожидался приём (по плану): {due_s}\n\n"
             "Проверьте, всё ли в порядке, и при необходимости свяжитесь с пациентом.\n"
-            "Это автоматическое сообщение приложения Time2T3 Your Pills."
+            "Это автоматическое сообщение приложения TimeToTake."
         )
 
         msg = EmailMessage()

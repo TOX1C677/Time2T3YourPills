@@ -16,7 +16,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Time2T3 API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="TimeToTake API", version="1.0.0", lifespan=lifespan)
 
 app.include_router(health.router)
 app.include_router(auth.router, prefix="/v1")

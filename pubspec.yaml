@@ -1,5 +1,5 @@
 name: time2t3_your_pills
-description: Клиент напоминаний о приёме лекарств (диплом), адаптация UI под паркинсонизм.
+description: TimeToTake - клиент напоминаний о приёме лекарств (диплом), UI под ограничения моторики.
 publish_to: "none"
 
 version: 1.0.0+1
